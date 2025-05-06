@@ -116,6 +116,80 @@ body {
     transform: translateY(-50%);
   }
   
+  /* Estilos para las tabs */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .tab-btn {
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    color: #4a5568;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  
+  .tab-btn:hover {
+    color: #3182ce;
+  }
+  
+  .tab-btn.active {
+    color: #3182ce;
+    border-bottom-color: #3182ce;
+  }
+  
+  .tab-content {
+    padding-top: 1rem;
+  }
+  
+  /* Estilos para recomendaciones y objetivos */
+  #recommendations-container {
+    animation: slideIn 0.4s ease-out;
+  }
+  
+  #goal-setting {
+    animation: slideIn 0.4s ease-out;
+  }
+  
+  #contact-mentor {
+    transition: all 0.2s;
+  }
+  
+  #contact-mentor:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* Estilos para el historial */
+  #history-list > div {
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  #history-list > div:last-child {
+    border-bottom: none;
+  }
+  
+  /* Estilos para la lista de objetivos */
+  #goals-list .toggle-goal,
+  #goals-list .delete-goal {
+    transition: all 0.2s;
+  }
+  
+  #goals-list .toggle-goal:hover,
+  #goals-list .delete-goal:hover {
+    transform: translateY(-1px);
+  }
+  
+  /* Recursos de bienestar */
+  .resource-card {
+    transition: all 0.3s;
+  }
+  
+  .resource-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
   /* Estilos responsivos */
   @media (max-width: 640px) {
     .container {
@@ -138,6 +212,12 @@ body {
     .mood-meter-container {
       margin-top: 2.5rem;
       margin-bottom: 2.5rem;
+    }
+    
+    .tabs {
+      overflow-x: auto;
+      white-space: nowrap;
+      padding-bottom: 0.5rem;
     }
   }
   
