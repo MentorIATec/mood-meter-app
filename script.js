@@ -719,7 +719,31 @@ document.addEventListener('DOMContentLoaded', function() {
         goalsListContainer.appendChild(goalElement);
       });
     }
-    
+        // Añadir después de los otros event listeners
+        if (document.getElementById('clear-history-button')) {
+            document.getElementById('clear-history-button').addEventListener('click', clearMoodHistory);
+        }
+        
+        // Añadir la función de borrado
+        function clearMoodHistory() {
+            if (confirm('¿Estás seguro de que quieres borrar todo tu historial de estados de ánimo? Esta acción no se puede deshacer.')) {
+            // Borrar solo del almacenamiento local (no de Google Sheets)
+            localStorage.setItem('moodHistory', JSON.stringify([]));
+            moodHistory = [];
+            updateHistory();
+            
+            // Actualizar el gráfico si es necesario
+            if (activeTab === 'trends') {
+                updateMoodChart();
+            }
+            
+            showNotification('Historial borrado correctamente.');
+            }
+        }
+    // Añadir después de la sección de event listeners
+    if (document.getElementById('sync-button')) {
+        document.getElementById('sync-button').addEventListener('click', syncPendingMoods);
+    }
     function toggleGoalStatus(goalId) {
       goalHistory = goalHistory.map(goal => {
         if (goal.id === goalId) {
