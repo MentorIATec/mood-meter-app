@@ -866,138 +866,241 @@ document.addEventListener('DOMContentLoaded', function() {
   // Función para enviar datos a Google Sheets con mejor manejo de errores
   function sendToGoogleSheets(moodData) {
     // URL de tu implementación de Google Apps Script
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbz_0GcVXNo8VHFrZ313pPDbRjMc5zfCDY20qSgz4v0dN4fzQ-s-y2PExOaWJ1P5T6gd/exec';
-      // Datos a enviar
-  const jsonData = {
-    timestamp: new Date().toISOString(),
-    studentId: getStudentId(),
-    studentName: localStorage.getItem('studentName') || '',
-    studentGroup: localStorage.getItem('studentGroup') || '',
-    emotion: moodData.emotion,
-    emoji: moodData.emoji,
-    quadrant: moodData.quadrant,
-    notes: moodData.notes || ''
-  };
-  
-  // Para depuración detallada
-  console.log('Enviando datos a Google Sheets (detalle completo):', jsonData);
-  
-  // Intentar con JSON primero
-  fetch(scriptURL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(jsonData),
-    mode: 'cors' // Asegurar que se envíe como CORS
-  })
-  .then(response => {
-    console.log('Respuesta del servidor recibida:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: [...response.headers].map(h => `${h[0]}: ${h[1]}`).join(', ')
-    });
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbz3IE0Az_-gMrryMfYsvMQCMbbFkhc_Na5tUkT1cNm-ym1qKo4-IvUBEIqryRozM55t/exec';
     
-    // Verificar si la respuesta es exitosa
-    if (!response.ok) {
-      return response.text().then(text => {
-        console.error('Error en la respuesta:', text);
-        throw new Error(`El servidor respondió con estado ${response.status}: ${text}`);
-      });
-    }
+    // Datos a enviar
+    const jsonData = {
+      timestamp: new Date().toISOString(),
+      studentId: getStudentId(),
+      studentName: localStorage.getItem('studentName') || '',
+      studentGroup: localStorage.getItem('studentGroup') || '',
+      emotion: moodData.emotion,
+      emoji: moodData.emoji,
+      quadrant: moodData.quadrant,
+      notes: moodData.notes || ''
+    };
     
-    return response.text().then(text => {
-      try {
-        return JSON.parse(text);
-      } catch (e) {
-        console.log('La respuesta no es JSON válido, devolviendo texto:', text);
-        return { result: 'success', rawResponse: text };
-      }
-    });
-  })
-  .then(data => {
-    console.log('¡Éxito! Datos enviados correctamente:', data);
-    showNotification('Datos enviados correctamente a tu mentora');
+    // Para depuración
+    console.log('Enviando datos a Google Sheets:', jsonData);
     
-    // Marcar este registro como sincronizado si estaba pendiente
-    const pendingMoods = JSON.parse(localStorage.getItem('moodBackup') || '[]');
-    const updatedPending = pendingMoods.filter(mood => 
-      mood.id !== moodData.id && mood.timestamp !== moodData.timestamp
-    );
-    localStorage.setItem('moodBackup', JSON.stringify(updatedPending));
-  })
-  .catch(error => {
-    console.error('Error al enviar datos (detalles completos):', {
-      message: error.message,
-      stack: error.stack
-    });
-    
-    // Intentar con FormData como alternativa
-    console.log('Intentando con FormData como alternativa...');
-    
+    // Crear un objeto FormData (usar primero este método más sencillo)
     const formData = new FormData();
     Object.entries(jsonData).forEach(([key, value]) => {
       formData.append(key, value);
     });
     
+    // Intentar con FormData primero (más compatible)
     fetch(scriptURL, {
       method: 'POST',
-      body: formData,
-      mode: 'cors'
+      body: formData
     })
     .then(response => {
+      console.log('Respuesta del servidor:', response.status, response.statusText);
+      
       if (!response.ok) {
-        throw new Error(`FormData también falló: ${response.status}`);
+        throw new Error(`Error HTTP: ${response.status}`);
       }
+      
       return response.text();
     })
-    .then(result => {
-      console.log('Éxito con FormData:', result);
-      showNotification('Datos enviados correctamente (usando método alternativo)');
+    .then(text => {
+      console.log('Respuesta completa:', text);
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.log('La respuesta no es JSON válido, pero la solicitud fue exitosa');
+        data = { result: 'success', rawResponse: text };
+      }
+      
+      console.log('Éxito al enviar datos:', data);
+      showNotification('Datos enviados correctamente a tu mentora');
+      
+      // Limpiar registros pendientes correspondientes
+      cleanupPendingMoods(moodData);
     })
-    .catch(formError => {
-      console.error('Error también con FormData:', formError.message);
-      showNotification('Error al enviar datos. Guardados localmente.', 'error');
-      // Guardar en localStorage como respaldo
-      saveMoodLocally(moodData);
-    });
-  });
-}
-
-// Función mejorada para guardar datos localmente
-function saveMoodLocally(moodData) {
-  // Asegurarse de que moodData tenga un ID único
-  if (!moodData.id) {
-    moodData.id = Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-  }
-  
-  // Obtener datos existentes
-  const localBackup = JSON.parse(localStorage.getItem('moodBackup') || '[]');
-  
-  // Verificar si ya existe este registro (para evitar duplicados)
-  const existingIndex = localBackup.findIndex(item => 
-    item.id === moodData.id || (item.timestamp === moodData.timestamp && item.emotion === moodData.emotion)
-  );
-  
-  if (existingIndex >= 0) {
-    // Actualizar registro existente
-    localBackup[existingIndex] = {
-      ...moodData,
-      pendingSync: true,
-      lastSyncAttempt: new Date().toISOString()
-    };
-  } else {
-    // Añadir el nuevo registro
-    localBackup.push({
-      ...moodData,
-      pendingSync: true,
-      lastSyncAttempt: new Date().toISOString()
+    .catch(error => {
+      console.error('Error con FormData:', error);
+      
+      // Si falla FormData, intentar con JSON como respaldo
+      console.log('Intentando con JSON como alternativa...');
+      
+      fetch(scriptURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jsonData)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`JSON también falló: ${response.status}`);
+        }
+        return response.text();
+      })
+      .then(result => {
+        console.log('Éxito con JSON:', result);
+        showNotification('Datos enviados correctamente');
+        cleanupPendingMoods(moodData);
+      })
+      .catch(jsonError => {
+        console.error('Error también con JSON:', jsonError);
+        showNotification('Error al enviar datos. Guardados localmente.', 'error');
+        
+        // Si ambos métodos fallan, guardar localmente
+        saveMoodLocally(moodData);
+      });
     });
   }
   
-  // Guardar actualización
-  localStorage.setItem('moodBackup', JSON.stringify(localBackup));
-  console.log('Datos guardados localmente como respaldo:', moodData);
+  // Función para limpiar registros pendientes después de una sincronización exitosa
+  function cleanupPendingMoods(moodData) {
+    const pendingMoods = JSON.parse(localStorage.getItem('moodBackup') || '[]');
+    
+    // Filtrar eliminando registros similares que puedan estar pendientes
+    const updatedPending = pendingMoods.filter(mood => {
+      // Eliminar el registro actual y coincidencias por ID o timestamp+emotion
+      return mood.id !== moodData.id && 
+             !(mood.timestamp === moodData.timestamp && mood.emotion === moodData.emotion);
+    });
+    
+    localStorage.setItem('moodBackup', JSON.stringify(updatedPending));
+    console.log(`Limpieza de respaldo: ${pendingMoods.length - updatedPending.length} registros eliminados`);
+  }
+  
+  // Función para guardar datos localmente como respaldo
+  function saveMoodLocally(moodData) {
+    // Asegurar que el registro tenga un ID único
+    if (!moodData.id) {
+      moodData.id = Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    }
+    
+    // Obtener registros existentes
+    const localBackup = JSON.parse(localStorage.getItem('moodBackup') || '[]');
+    
+    // Verificar si el registro ya existe para evitar duplicados
+    const existingIndex = localBackup.findIndex(item => 
+      item.id === moodData.id || 
+      (item.timestamp === moodData.timestamp && item.emotion === moodData.emotion)
+    );
+    
+    if (existingIndex >= 0) {
+      // Actualizar registro existente
+      localBackup[existingIndex] = {
+        ...moodData,
+        pendingSync: true,
+        lastSyncAttempt: new Date().toISOString()
+      };
+    } else {
+      // Añadir nuevo registro
+      localBackup.push({
+        ...moodData,
+        pendingSync: true,
+        lastSyncAttempt: new Date().toISOString()
+      });
+    }
+    
+    // Guardar en localStorage
+    localStorage.setItem('moodBackup', JSON.stringify(localBackup));
+    console.log('Datos guardados localmente para sincronización futura:', moodData);
+  }
+  
+  // Función para sincronizar estados de ánimo pendientes
+  function syncPendingMoods() {
+    const pendingMoods = JSON.parse(localStorage.getItem('moodBackup') || '[]');
+    
+    // Filtrar solo los pendientes
+    const toSync = pendingMoods.filter(mood => mood.pendingSync);
+    
+    if (toSync.length === 0) {
+      console.log('No hay registros pendientes para sincronizar');
+      showNotification('No hay registros pendientes para sincronizar');
+      return;
+    }
+    
+    console.log(`Intentando sincronizar ${toSync.length} registros pendientes`);
+    showNotification(`Sincronizando ${toSync.length} registros...`);
+    
+    // Contador para seguimiento
+    let syncedCount = 0;
+    let errorCount = 0;
+    
+    // Función para sincronizar de forma secuencial
+    function syncNext(index) {
+      if (index >= toSync.length) {
+        // Terminamos todos los registros
+        localStorage.setItem('moodBackup', JSON.stringify(pendingMoods));
+        showNotification(`Sincronización completada: ${syncedCount} éxitos, ${errorCount} errores`);
+        return;
+      }
+      
+      const mood = toSync[index];
+      console.log(`Sincronizando registro ${index + 1}/${toSync.length}:`, mood.emotion);
+      
+      // Preparar datos para enviar
+      const moodData = {
+        id: mood.id,
+        emotion: mood.emotion,
+        emoji: mood.emoji,
+        quadrant: mood.quadrant,
+        notes: mood.notes || '',
+        timestamp: mood.timestamp,
+        studentName: mood.studentName || localStorage.getItem('studentName') || '',
+        studentId: mood.studentId || getStudentId(),
+        studentGroup: mood.studentGroup || localStorage.getItem('studentGroup') || ''
+      };
+      
+      // Crear un objeto FormData (método más simple y compatible)
+      const formData = new FormData();
+      const jsonData = {
+        timestamp: moodData.timestamp,
+        studentId: moodData.studentId,
+        studentName: moodData.studentName,
+        studentGroup: moodData.studentGroup,
+        emotion: moodData.emotion,
+        emoji: moodData.emoji,
+        quadrant: moodData.quadrant,
+        notes: moodData.notes
+      };
+      
+      Object.entries(jsonData).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+      
+      // URL del script
+      const scriptURL = 'https://script.google.com/macros/s/AKfycbz_0GcVXNo8VHFrZ313pPDbRjMc5zfCDY20qSgz4v0dN4fzQ-s-y2PExOaWJ1P5T6gd/exec';
+      
+      // Enviar con FormData
+      fetch(scriptURL, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+        }
+        return response.text();
+      })
+      .then(() => {
+        console.log(`Registro ${index + 1} sincronizado correctamente`);
+        syncedCount++;
+        mood.pendingSync = false;
+        
+        // Continuar con el siguiente después de un breve retraso
+        setTimeout(() => syncNext(index + 1), 500);
+      })
+      .catch(error => {
+        console.error(`Error sincronizando registro ${index + 1}:`, error);
+        errorCount++;
+        mood.lastSyncAttempt = new Date().toISOString();
+        
+        // Continuar a pesar del error
+        setTimeout(() => syncNext(index + 1), 500);
+      });
+    }
+    
+    // Iniciar sincronización secuencial
+    syncNext(0);
   }
   
   // Función para sincronizar estados de ánimo pendientes
