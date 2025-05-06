@@ -867,106 +867,137 @@ document.addEventListener('DOMContentLoaded', function() {
   function sendToGoogleSheets(moodData) {
     // URL de tu implementación de Google Apps Script
     const scriptURL = 'https://script.google.com/macros/s/AKfycbz_0GcVXNo8VHFrZ313pPDbRjMc5zfCDY20qSgz4v0dN4fzQ-s-y2PExOaWJ1P5T6gd/exec';
+      // Datos a enviar
+  const jsonData = {
+    timestamp: new Date().toISOString(),
+    studentId: getStudentId(),
+    studentName: localStorage.getItem('studentName') || '',
+    studentGroup: localStorage.getItem('studentGroup') || '',
+    emotion: moodData.emotion,
+    emoji: moodData.emoji,
+    quadrant: moodData.quadrant,
+    notes: moodData.notes || ''
+  };
+  
+  // Para depuración detallada
+  console.log('Enviando datos a Google Sheets (detalle completo):', jsonData);
+  
+  // Intentar con JSON primero
+  fetch(scriptURL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(jsonData),
+    mode: 'cors' // Asegurar que se envíe como CORS
+  })
+  .then(response => {
+    console.log('Respuesta del servidor recibida:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: [...response.headers].map(h => `${h[0]}: ${h[1]}`).join(', ')
+    });
     
-    // Datos a enviar (en formato JSON y FormData para mayor compatibilidad)
-    const jsonData = {
-      timestamp: new Date().toISOString(),
-      studentId: getStudentId(),
-      studentName: localStorage.getItem('studentName') || '',
-      studentGroup: localStorage.getItem('studentGroup') || '',
-      emotion: moodData.emotion,
-      emoji: moodData.emoji,
-      quadrant: moodData.quadrant,
-      notes: moodData.notes || ''
-    };
+    // Verificar si la respuesta es exitosa
+    if (!response.ok) {
+      return response.text().then(text => {
+        console.error('Error en la respuesta:', text);
+        throw new Error(`El servidor respondió con estado ${response.status}: ${text}`);
+      });
+    }
     
-    // Para depuración
-    console.log('Enviando datos a Google Sheets:', jsonData);
+    return response.text().then(text => {
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        console.log('La respuesta no es JSON válido, devolviendo texto:', text);
+        return { result: 'success', rawResponse: text };
+      }
+    });
+  })
+  .then(data => {
+    console.log('¡Éxito! Datos enviados correctamente:', data);
+    showNotification('Datos enviados correctamente a tu mentora');
     
-    // Intentar primero con JSON
+    // Marcar este registro como sincronizado si estaba pendiente
+    const pendingMoods = JSON.parse(localStorage.getItem('moodBackup') || '[]');
+    const updatedPending = pendingMoods.filter(mood => 
+      mood.id !== moodData.id && mood.timestamp !== moodData.timestamp
+    );
+    localStorage.setItem('moodBackup', JSON.stringify(updatedPending));
+  })
+  .catch(error => {
+    console.error('Error al enviar datos (detalles completos):', {
+      message: error.message,
+      stack: error.stack
+    });
+    
+    // Intentar con FormData como alternativa
+    console.log('Intentando con FormData como alternativa...');
+    
+    const formData = new FormData();
+    Object.entries(jsonData).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
+    
     fetch(scriptURL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(jsonData)
+      body: formData,
+      mode: 'cors'
     })
     .then(response => {
       if (!response.ok) {
-        // Si falla con JSON, intentar con FormData
-        console.log('Intentando con FormData...');
-        const formData = new FormData();
-        
-        // Añadir todos los datos como campos de formulario
-        Object.entries(jsonData).forEach(([key, value]) => {
-          formData.append(key, value);
-        });
-        
-        return fetch(scriptURL, { 
-          method: 'POST', 
-          body: formData 
-        });
+        throw new Error(`FormData también falló: ${response.status}`);
       }
-      return response;
+      return response.text();
     })
-    .then(response => {
-      console.log('Success!', response);
-      showNotification('Datos enviados correctamente a tu mentora');
+    .then(result => {
+      console.log('Éxito con FormData:', result);
+      showNotification('Datos enviados correctamente (usando método alternativo)');
     })
-    .catch(error => {
-      console.error('Error al enviar datos:', error.message);
+    .catch(formError => {
+      console.error('Error también con FormData:', formError.message);
       showNotification('Error al enviar datos. Guardados localmente.', 'error');
-      
       // Guardar en localStorage como respaldo
       saveMoodLocally(moodData);
     });
+  });
+}
+
+// Función mejorada para guardar datos localmente
+function saveMoodLocally(moodData) {
+  // Asegurarse de que moodData tenga un ID único
+  if (!moodData.id) {
+    moodData.id = Date.now() + '_' + Math.random().toString(36).substring(2, 9);
   }
   
-  // Función para obtener un ID único para el estudiante
-  function getStudentId() {
-    // Verificar si ya existe un ID
-    let studentId = localStorage.getItem('studentId');
-    
-    // Si no existe, crear uno nuevo
-    if (!studentId) {
-      studentId = 'student_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-      localStorage.setItem('studentId', studentId);
-    }
-    
-    return studentId;
-  }
+  // Obtener datos existentes
+  const localBackup = JSON.parse(localStorage.getItem('moodBackup') || '[]');
   
-  // Función para mostrar notificación
-  function showNotification(message, type = 'success') {
-    const notificationsContainer = document.getElementById('notifications-container') || document.body;
-    
-    const notification = document.createElement('div');
-    notification.className = `p-4 rounded-lg shadow-lg z-50 ${
-      type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    } text-white`;
-    notification.textContent = message;
-    
-    notificationsContainer.appendChild(notification);
-    
-    // Remover después de 3 segundos
-    setTimeout(() => {
-      notification.remove();
-    }, 5000);
-  }
+  // Verificar si ya existe este registro (para evitar duplicados)
+  const existingIndex = localBackup.findIndex(item => 
+    item.id === moodData.id || (item.timestamp === moodData.timestamp && item.emotion === moodData.emotion)
+  );
   
-  // Función auxiliar para guardar datos localmente como respaldo
-  function saveMoodLocally(moodData) {
-    // Obtener datos existentes
-    const localBackup = JSON.parse(localStorage.getItem('moodBackup') || '[]');
-    
+  if (existingIndex >= 0) {
+    // Actualizar registro existente
+    localBackup[existingIndex] = {
+      ...moodData,
+      pendingSync: true,
+      lastSyncAttempt: new Date().toISOString()
+    };
+  } else {
     // Añadir el nuevo registro
     localBackup.push({
       ...moodData,
-      pendingSync: true
+      pendingSync: true,
+      lastSyncAttempt: new Date().toISOString()
     });
-    
-    // Guardar actualización
-    localStorage.setItem('moodBackup', JSON.stringify(localBackup));
+  }
+  
+  // Guardar actualización
+  localStorage.setItem('moodBackup', JSON.stringify(localBackup));
+  console.log('Datos guardados localmente como respaldo:', moodData);
   }
   
   // Función para sincronizar estados de ánimo pendientes
