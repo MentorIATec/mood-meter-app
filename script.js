@@ -902,7 +902,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function sendToGoogleSheets(moodData) {
       // URL de tu implementación de Google Apps Script
       // IMPORTANTE: Esta URL debe ser la misma en todo el código
-      const scriptURL = 'https://script.google.com/macros/s/AKfycbz3IE0Az_-gMrryMfYsvMQCMbbFkhc_Na5tUkT1cNm-ym1qKo4-IvUBEIqryRozM55t/exec';
+      const scriptURL = 'https://script.google.com/macros/s/AKfycbxHIgXgV3-9QICix4yMWt82_0olbKSmoIKKVYXujPHDjhKZ9-aMcQAEAaGG34RCwM8l/exec';
       
       // Datos a enviar
       const jsonData = {
