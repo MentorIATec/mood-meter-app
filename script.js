@@ -866,7 +866,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Función para enviar datos a Google Sheets con mejor manejo de errores
   function sendToGoogleSheets(moodData) {
     // URL de tu implementación de Google Apps Script
-    const scriptURL = 'https://script.google.com/a/macros/tec.mx/s/AKfycbzf016zR1XFok28Q-Se7MWTR-sVWNwR_z_H8xJgMjhpX4UlSi8jUc01xAA4i8rUKT-VHg/exec';
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbwlBeWxm_1gij2nzSH6AQnJlDrTlFIjhRD3UVF4zsufqC4_XFBnvrS09VT11enCtmvn/exec';
     
     // Datos a enviar (en formato JSON y FormData para mayor compatibilidad)
     const jsonData = {
