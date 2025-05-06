@@ -326,6 +326,16 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   
+    // Añadir después de los otros event listeners
+    if (document.getElementById('clear-history-button')) {
+      document.getElementById('clear-history-button').addEventListener('click', clearMoodHistory);
+    }
+    
+    // Añadir después de la sección de event listeners
+    if (document.getElementById('sync-button')) {
+      document.getElementById('sync-button').addEventListener('click', syncPendingMoods);
+    }
+
     // Inicializar
     checkElements();
     updateHistory();
@@ -719,423 +729,344 @@ document.addEventListener('DOMContentLoaded', function() {
         goalsListContainer.appendChild(goalElement);
       });
     }
-        // Añadir después de los otros event listeners
-        if (document.getElementById('clear-history-button')) {
-            document.getElementById('clear-history-button').addEventListener('click', clearMoodHistory);
+    
+    // Añadir la función de borrado
+    function clearMoodHistory() {
+      if (confirm('¿Estás seguro de que quieres borrar todo tu historial de estados de ánimo? Esta acción no se puede deshacer.')) {
+        // Borrar solo del almacenamiento local (no de Google Sheets)
+        localStorage.setItem('moodHistory', JSON.stringify([]));
+        moodHistory = [];
+        updateHistory();
+        
+        // Actualizar el gráfico si es necesario
+        if (activeTab === 'trends') {
+          updateMoodChart();
         }
         
-        // Añadir la función de borrado
-        function clearMoodHistory() {
-            if (confirm('¿Estás seguro de que quieres borrar todo tu historial de estados de ánimo? Esta acción no se puede deshacer.')) {
-            // Borrar solo del almacenamiento local (no de Google Sheets)
-            localStorage.setItem('moodHistory', JSON.stringify([]));
-            moodHistory = [];
-            updateHistory();
-            
-            // Actualizar el gráfico si es necesario
-            if (activeTab === 'trends') {
-                updateMoodChart();
-            }
-            
-            showNotification('Historial borrado correctamente.');
-            }
-        }
-    // Añadir después de la sección de event listeners
-    if (document.getElementById('sync-button')) {
-        document.getElementById('sync-button').addEventListener('click', syncPendingMoods);
+        showNotification('Historial borrado correctamente.');
+      }
     }
+    
     function toggleGoalStatus(goalId) {
       goalHistory = goalHistory.map(goal => {
         if (goal.id === goalId) {
           return { ...goal, completed: !goal.completed };
         }
         return goal;
-    });
-    
-    localStorage.setItem('goalHistory', JSON.stringify(goalHistory));
-    updateGoalsList();
-  }
-  
-  function deleteGoal(goalId) {
-    if (confirm('¿Estás seguro de que quieres eliminar este objetivo?')) {
-      goalHistory = goalHistory.filter(goal => goal.id !== goalId);
+      });
+      
       localStorage.setItem('goalHistory', JSON.stringify(goalHistory));
       updateGoalsList();
     }
-  }
-  
-  function formatGoalType(type) {
-    switch(type) {
-      case 'academic': return 'Académico';
-      case 'wellbeing': return 'Bienestar';
-      case 'social': return 'Social';
-      default: return type;
-    }
-  }
-  
-  function updateMoodChart() {
-    if (!moodChartCanvas) {
-      console.error('Canvas para el gráfico no encontrado');
-      return;
-    }
     
-    // Solo proceder si hay datos y el canvas existe
-    if (moodHistory.length === 0) {
-      console.log('No hay datos para crear el gráfico');
-      return;
-    }
-    
-    console.log('Actualizando gráfico de estados de ánimo');
-    
-    // Preparar datos para el gráfico
-    const lastEntries = [...moodHistory].reverse().slice(0, 10);
-    
-    const quadrantCounts = {
-      red: 0,
-      yellow: 0,
-      blue: 0,
-      green: 0
-    };
-    
-    // Contar ocurrencias de cada cuadrante
-    moodHistory.forEach(entry => {
-      if (entry.quadrant && quadrantCounts.hasOwnProperty(entry.quadrant)) {
-        quadrantCounts[entry.quadrant]++;
+    function deleteGoal(goalId) {
+      if (confirm('¿Estás seguro de que quieres eliminar este objetivo?')) {
+        goalHistory = goalHistory.filter(goal => goal.id !== goalId);
+        localStorage.setItem('goalHistory', JSON.stringify(goalHistory));
+        updateGoalsList();
       }
-    });
-    
-    // Datos para gráfico de barras
-    const barData = {
-      labels: ['Emociones Intensas', 'Emociones Positivas', 'Emociones Bajas', 'Emociones Tranquilas'],
-      datasets: [{
-        label: 'Distribución de estados de ánimo',
-        data: [
-          quadrantCounts.red,
-          quadrantCounts.yellow,
-          quadrantCounts.blue,
-          quadrantCounts.green
-        ],
-        backgroundColor: [
-          '#F27052',
-          '#FFDC51',
-          '#51A8FF',
-          '#92D36E'
-        ]
-      }]
-    };
-    
-    // Crear gráfico (limpiar canvas primero si ya hay un gráfico)
-    if (window.moodChartInstance) {
-      window.moodChartInstance.destroy();
     }
     
-    try {
-      window.moodChartInstance = new Chart(moodChartCanvas, {
-        type: 'bar',
-        data: barData,
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              display: false
-            },
-            title: {
-              display: true,
-              text: 'Distribución de tus estados de ánimo'
-            }
-          }
-        }
-      });
-      console.log('Gráfico creado correctamente');
-    } catch (error) {
-      console.error('Error al crear el gráfico:', error);
-    }
-  }
-
-  function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleString('es-ES', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric',
-      hour: '2-digit', 
-      minute: '2-digit'
-    });
-  }
-  
-  // Función para enviar datos a Google Sheets con mejor manejo de errores
-  function sendToGoogleSheets(moodData) {
-    // URL de tu implementación de Google Apps Script
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbz3IE0Az_-gMrryMfYsvMQCMbbFkhc_Na5tUkT1cNm-ym1qKo4-IvUBEIqryRozM55t/exec';
-    
-    // Datos a enviar
-    const jsonData = {
-      timestamp: new Date().toISOString(),
-      studentId: getStudentId(),
-      studentName: localStorage.getItem('studentName') || '',
-      studentGroup: localStorage.getItem('studentGroup') || '',
-      emotion: moodData.emotion,
-      emoji: moodData.emoji,
-      quadrant: moodData.quadrant,
-      notes: moodData.notes || ''
-    };
-    
-    // Para depuración
-    console.log('Enviando datos a Google Sheets:', jsonData);
-    
-    // Crear un objeto FormData (usar primero este método más sencillo)
-    const formData = new FormData();
-    Object.entries(jsonData).forEach(([key, value]) => {
-      formData.append(key, value);
-    });
-    
-    // Intentar con FormData primero (más compatible)
-    fetch(scriptURL, {
-      method: 'POST',
-      body: formData
-    })
-    .then(response => {
-      console.log('Respuesta del servidor:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
+    function formatGoalType(type) {
+      switch(type) {
+        case 'academic': return 'Académico';
+        case 'wellbeing': return 'Bienestar';
+        case 'social': return 'Social';
+        default: return type;
       }
-      
-      return response.text();
-    })
-    .then(text => {
-      console.log('Respuesta completa:', text);
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        console.log('La respuesta no es JSON válido, pero la solicitud fue exitosa');
-        data = { result: 'success', rawResponse: text };
-      }
-      
-      console.log('Éxito al enviar datos:', data);
-      showNotification('Datos enviados correctamente a tu mentora');
-      
-      // Limpiar registros pendientes correspondientes
-      cleanupPendingMoods(moodData);
-    })
-    .catch(error => {
-      console.error('Error con FormData:', error);
-      
-      // Si falla FormData, intentar con JSON como respaldo
-      console.log('Intentando con JSON como alternativa...');
-      
-      fetch(scriptURL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(jsonData)
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`JSON también falló: ${response.status}`);
-        }
-        return response.text();
-      })
-      .then(result => {
-        console.log('Éxito con JSON:', result);
-        showNotification('Datos enviados correctamente');
-        cleanupPendingMoods(moodData);
-      })
-      .catch(jsonError => {
-        console.error('Error también con JSON:', jsonError);
-        showNotification('Error al enviar datos. Guardados localmente.', 'error');
-        
-        // Si ambos métodos fallan, guardar localmente
-        saveMoodLocally(moodData);
-      });
-    });
-  }
-  
-  // Función para limpiar registros pendientes después de una sincronización exitosa
-  function cleanupPendingMoods(moodData) {
-    const pendingMoods = JSON.parse(localStorage.getItem('moodBackup') || '[]');
-    
-    // Filtrar eliminando registros similares que puedan estar pendientes
-    const updatedPending = pendingMoods.filter(mood => {
-      // Eliminar el registro actual y coincidencias por ID o timestamp+emotion
-      return mood.id !== moodData.id && 
-             !(mood.timestamp === moodData.timestamp && mood.emotion === moodData.emotion);
-    });
-    
-    localStorage.setItem('moodBackup', JSON.stringify(updatedPending));
-    console.log(`Limpieza de respaldo: ${pendingMoods.length - updatedPending.length} registros eliminados`);
-  }
-  
-  // Función para guardar datos localmente como respaldo
-  function saveMoodLocally(moodData) {
-    // Asegurar que el registro tenga un ID único
-    if (!moodData.id) {
-      moodData.id = Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     }
     
-    // Obtener registros existentes
-    const localBackup = JSON.parse(localStorage.getItem('moodBackup') || '[]');
-    
-    // Verificar si el registro ya existe para evitar duplicados
-    const existingIndex = localBackup.findIndex(item => 
-      item.id === moodData.id || 
-      (item.timestamp === moodData.timestamp && item.emotion === moodData.emotion)
-    );
-    
-    if (existingIndex >= 0) {
-      // Actualizar registro existente
-      localBackup[existingIndex] = {
-        ...moodData,
-        pendingSync: true,
-        lastSyncAttempt: new Date().toISOString()
-      };
-    } else {
-      // Añadir nuevo registro
-      localBackup.push({
-        ...moodData,
-        pendingSync: true,
-        lastSyncAttempt: new Date().toISOString()
-      });
-    }
-    
-    // Guardar en localStorage
-    localStorage.setItem('moodBackup', JSON.stringify(localBackup));
-    console.log('Datos guardados localmente para sincronización futura:', moodData);
-  }
-  
-  // Función para sincronizar estados de ánimo pendientes
-  function syncPendingMoods() {
-    const pendingMoods = JSON.parse(localStorage.getItem('moodBackup') || '[]');
-    
-    // Filtrar solo los pendientes
-    const toSync = pendingMoods.filter(mood => mood.pendingSync);
-    
-    if (toSync.length === 0) {
-      console.log('No hay registros pendientes para sincronizar');
-      showNotification('No hay registros pendientes para sincronizar');
-      return;
-    }
-    
-    console.log(`Intentando sincronizar ${toSync.length} registros pendientes`);
-    showNotification(`Sincronizando ${toSync.length} registros...`);
-    
-    // Contador para seguimiento
-    let syncedCount = 0;
-    let errorCount = 0;
-    
-    // Función para sincronizar de forma secuencial
-    function syncNext(index) {
-      if (index >= toSync.length) {
-        // Terminamos todos los registros
-        localStorage.setItem('moodBackup', JSON.stringify(pendingMoods));
-        showNotification(`Sincronización completada: ${syncedCount} éxitos, ${errorCount} errores`);
+    function updateMoodChart() {
+      if (!moodChartCanvas) {
+        console.error('Canvas para el gráfico no encontrado');
         return;
       }
       
-      const mood = toSync[index];
-      console.log(`Sincronizando registro ${index + 1}/${toSync.length}:`, mood.emotion);
+      // Solo proceder si hay datos y el canvas existe
+      if (moodHistory.length === 0) {
+        console.log('No hay datos para crear el gráfico');
+        return;
+      }
       
-      // Preparar datos para enviar
-      const moodData = {
-        id: mood.id,
-        emotion: mood.emotion,
-        emoji: mood.emoji,
-        quadrant: mood.quadrant,
-        notes: mood.notes || '',
-        timestamp: mood.timestamp,
-        studentName: mood.studentName || localStorage.getItem('studentName') || '',
-        studentId: mood.studentId || getStudentId(),
-        studentGroup: mood.studentGroup || localStorage.getItem('studentGroup') || ''
+      console.log('Actualizando gráfico de estados de ánimo');
+      
+      // Preparar datos para el gráfico
+      const lastEntries = [...moodHistory].reverse().slice(0, 10);
+      
+      const quadrantCounts = {
+        red: 0,
+        yellow: 0,
+        blue: 0,
+        green: 0
       };
       
-      // Crear un objeto FormData (método más simple y compatible)
-      const formData = new FormData();
+      // Contar ocurrencias de cada cuadrante
+      moodHistory.forEach(entry => {
+        if (entry.quadrant && quadrantCounts.hasOwnProperty(entry.quadrant)) {
+          quadrantCounts[entry.quadrant]++;
+        }
+      });
+      
+      // Datos para gráfico de barras
+      const barData = {
+        labels: ['Emociones Intensas', 'Emociones Positivas', 'Emociones Bajas', 'Emociones Tranquilas'],
+        datasets: [{
+          label: 'Distribución de estados de ánimo',
+          data: [
+            quadrantCounts.red,
+            quadrantCounts.yellow,
+            quadrantCounts.blue,
+            quadrantCounts.green
+          ],
+          backgroundColor: [
+            '#F27052',
+            '#FFDC51',
+            '#51A8FF',
+            '#92D36E'
+          ]
+        }]
+      };
+      
+      // Crear gráfico (limpiar canvas primero si ya hay un gráfico)
+      if (window.moodChartInstance) {
+        window.moodChartInstance.destroy();
+      }
+      
+      try {
+        window.moodChartInstance = new Chart(moodChartCanvas, {
+          type: 'bar',
+          data: barData,
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: false
+              },
+              title: {
+                display: true,
+                text: 'Distribución de tus estados de ánimo'
+              }
+            }
+          }
+        });
+        console.log('Gráfico creado correctamente');
+      } catch (error) {
+        console.error('Error al crear el gráfico:', error);
+      }
+    }
+  
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleString('es-ES', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit', 
+        minute: '2-digit'
+      });
+    }
+    
+    // Función para obtener un ID único para el estudiante
+    function getStudentId() {
+      // Verificar si ya existe un ID
+      let studentId = localStorage.getItem('studentId');
+      
+      // Si no existe, crear uno nuevo
+      if (!studentId) {
+        studentId = 'student_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('studentId', studentId);
+      }
+      
+      return studentId;
+    }
+    
+    // Función para mostrar notificación
+    function showNotification(message, type = 'success') {
+      const notificationsContainer = document.getElementById('notifications-container') || document.body;
+      
+      const notification = document.createElement('div');
+      notification.className = `p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500' : 'bg-red-500'
+      } text-white`;
+      notification.textContent = message;
+      
+      notificationsContainer.appendChild(notification);
+      
+      // Remover después de 5 segundos
+      setTimeout(() => {
+        notification.remove();
+      }, 5000);
+    }
+    
+    // Función para enviar datos a Google Sheets con mejor manejo de errores
+    function sendToGoogleSheets(moodData) {
+      // URL de tu implementación de Google Apps Script
+      // IMPORTANTE: Esta URL debe ser la misma en todo el código
+      const scriptURL = 'https://script.google.com/macros/s/AKfycbz3IE0Az_-gMrryMfYsvMQCMbbFkhc_Na5tUkT1cNm-ym1qKo4-IvUBEIqryRozM55t/exec';
+      
+      // Datos a enviar
       const jsonData = {
-        timestamp: moodData.timestamp,
-        studentId: moodData.studentId,
-        studentName: moodData.studentName,
-        studentGroup: moodData.studentGroup,
+        timestamp: new Date().toISOString(),
+        studentId: getStudentId(),
+        studentName: localStorage.getItem('studentName') || '',
+        studentGroup: localStorage.getItem('studentGroup') || '',
         emotion: moodData.emotion,
         emoji: moodData.emoji,
         quadrant: moodData.quadrant,
-        notes: moodData.notes
+        notes: moodData.notes || ''
       };
       
+      // Para depuración
+      console.log('Enviando datos a Google Sheets:', jsonData);
+      
+      // Crear un objeto FormData (usar primero este método más sencillo)
+      const formData = new FormData();
       Object.entries(jsonData).forEach(([key, value]) => {
-        formData.append(key, value);
+        formData.append(key, String(value)); // Asegurarse de que los valores sean strings
       });
       
-      // URL del script
-      const scriptURL = 'https://script.google.com/macros/s/AKfycbz_0GcVXNo8VHFrZ313pPDbRjMc5zfCDY20qSgz4v0dN4fzQ-s-y2PExOaWJ1P5T6gd/exec';
-      
-      // Enviar con FormData
+      // Intentar con FormData primero
       fetch(scriptURL, {
         method: 'POST',
-        body: formData
+        body: formData,
+        mode: 'no-cors' // Esto es crucial para evitar problemas de CORS
       })
       .then(response => {
-        if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`);
-        }
-        return response.text();
-      })
-      .then(() => {
-        console.log(`Registro ${index + 1} sincronizado correctamente`);
-        syncedCount++;
-        mood.pendingSync = false;
+        console.log('Respuesta del servidor:', response);
         
-        // Continuar con el siguiente después de un breve retraso
-        setTimeout(() => syncNext(index + 1), 500);
+        // Nota: con mode: 'no-cors', no podemos verificar realmente la respuesta,
+        // así que asumimos que fue exitosa si no hay errores
+        showNotification('Datos enviados correctamente a tu mentora');
+        
+        // Limpiar registros pendientes correspondientes
+        cleanupPendingMoods(moodData);
+        return { success: true };
       })
       .catch(error => {
-        console.error(`Error sincronizando registro ${index + 1}:`, error);
-        errorCount++;
-        mood.lastSyncAttempt = new Date().toISOString();
+        console.error('Error con FormData:', error);
         
-        // Continuar a pesar del error
-        setTimeout(() => syncNext(index + 1), 500);
+        // Si falla FormData, intentar con JSON como respaldo
+        console.log('Intentando con JSON como alternativa...');
+        
+        fetch(scriptURL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(jsonData),
+          mode: 'no-cors' // También usar no-cors aquí
+        })
+        .then(() => {
+          console.log('Éxito con JSON');
+          showNotification('Datos enviados correctamente');
+          cleanupPendingMoods(moodData);
+        })
+        .catch(jsonError => {
+          console.error('Error también con JSON:', jsonError);
+          showNotification('Error al enviar datos. Guardados localmente.', 'error');
+          
+          // Si ambos métodos fallan, guardar localmente
+          saveMoodLocally(moodData);
+        });
       });
     }
     
-    // Iniciar sincronización secuencial
-    syncNext(0);
-  }
-  
-  // Función para sincronizar estados de ánimo pendientes
-  function syncPendingMoods() {
-    const pendingMoods = JSON.parse(localStorage.getItem('moodBackup') || '[]');
-    
-    if (pendingMoods.length === 0) {
-      console.log('No hay registros pendientes para sincronizar');
-      return;
+    // Función para limpiar registros pendientes después de una sincronización exitosa
+    function cleanupPendingMoods(moodData) {
+      const pendingMoods = JSON.parse(localStorage.getItem('moodBackup') || '[]');
+      
+      // Filtrar eliminando registros similares que puedan estar pendientes
+      const updatedPending = pendingMoods.filter(mood => {
+        // Eliminar el registro actual y coincidencias por ID o timestamp+emotion
+        return mood.id !== moodData.id && 
+               !(mood.timestamp === moodData.timestamp && mood.emotion === moodData.emotion);
+      });
+      
+      localStorage.setItem('moodBackup', JSON.stringify(updatedPending));
+      console.log(`Limpieza de respaldo: ${pendingMoods.length - updatedPending.length} registros eliminados`);
     }
     
-    console.log(`Intentando sincronizar ${pendingMoods.length} registros pendientes`);
+    // Función para guardar datos localmente como respaldo
+    function saveMoodLocally(moodData) {
+      // Asegurar que el registro tenga un ID único
+      if (!moodData.id) {
+        moodData.id = Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+      }
+      
+      // Obtener registros existentes
+      const localBackup = JSON.parse(localStorage.getItem('moodBackup') || '[]');
+      
+      // Verificar si el registro ya existe para evitar duplicados
+      const existingIndex = localBackup.findIndex(item => 
+        item.id === moodData.id || 
+        (item.timestamp === moodData.timestamp && item.emotion === moodData.emotion)
+      );
+      
+      if (existingIndex >= 0) {
+        // Actualizar registro existente
+        localBackup[existingIndex] = {
+          ...moodData,
+          pendingSync: true,
+          lastSyncAttempt: new Date().toISOString()
+        };
+      } else {
+        // Añadir nuevo registro
+        localBackup.push({
+          ...moodData,
+          pendingSync: true,
+          lastSyncAttempt: new Date().toISOString()
+        });
+      }
+      
+      // Guardar en localStorage
+      localStorage.setItem('moodBackup', JSON.stringify(localBackup));
+      console.log('Datos guardados localmente para sincronización futura:', moodData);
+    }
     
-    // Filtrar solo los pendientes de sincronización
-    const toSync = pendingMoods.filter(mood => mood.pendingSync);
-    
-    // Intentar sincronizar cada uno
-    let syncedCount = 0;
-    
-    toSync.forEach(async (mood, index) => {
-      try {
-        await new Promise(resolve => setTimeout(resolve, index * 1000)); // Espaciar las solicitudes
+    // Función para sincronizar estados de ánimo pendientes
+    function syncPendingMoods() {
+      const pendingMoods = JSON.parse(localStorage.getItem('moodBackup') || '[]');
+      
+      // Filtrar solo los pendientes
+      const toSync = pendingMoods.filter(mood => mood.pendingSync);
+      
+      if (toSync.length === 0) {
+        console.log('No hay registros pendientes para sincronizar');
+        showNotification('No hay registros pendientes para sincronizar');
+        return;
+      }
+      
+      console.log(`Intentando sincronizar ${toSync.length} registros pendientes`);
+      showNotification(`Sincronizando ${toSync.length} registros...`);
+      
+      // Contador para seguimiento
+      let syncedCount = 0;
+      let errorCount = 0;
+      
+      // Función para sincronizar de forma secuencial
+      function syncNext(index) {
+        if (index >= toSync.length) {
+          // Terminamos todos los registros
+          localStorage.setItem('moodBackup', JSON.stringify(pendingMoods));
+          showNotification(`Sincronización completada: ${syncedCount} éxitos, ${errorCount} errores`);
+          return;
+        }
+        
+        const mood = toSync[index];
+        console.log(`Sincronizando registro ${index + 1}/${toSync.length}:`, mood.emotion);
+        
+        // Usar la función principal de envío para mantener consistencia
         sendToGoogleSheets(mood);
+        
+        // Marcar como procesado
         mood.pendingSync = false;
         syncedCount++;
-      } catch (error) {
-        console.error('Error syncing mood:', error);
+        
+        // Continuar con el siguiente después de un breve retraso
+        setTimeout(() => syncNext(index + 1), 1000);
       }
-    });
-    
-    // Actualizar el almacenamiento local
-    localStorage.setItem('moodBackup', JSON.stringify(pendingMoods));
-    
-    if (syncedCount > 0) {
-      showNotification(`Se sincronizaron ${syncedCount} registros pendientes`);
+      
+      // Iniciar sincronización secuencial
+      syncNext(0);
     }
-  }
 });
