@@ -1,0 +1,122 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medidor de Estado de Ánimo</title>
+  <!-- Tailwind CSS desde CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2 text-center">¿Cómo te sientes hoy?</h1>
+    <p class="text-lg text-gray-600 mb-6 text-center">Selecciona el cuadrante que mejor represente tu estado emocional actual</p>
+    
+    <!-- Mood Meter Grid -->
+    <div class="relative grid grid-cols-2 grid-rows-2 w-full h-80 rounded-lg overflow-hidden shadow-md mb-8">
+      <!-- Etiquetas de ejes -->
+      <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-4 py-2 rounded-full shadow z-10 font-semibold">
+        ⚡ ALTA ENERGÍA
+      </div>
+      <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white px-4 py-2 rounded-full shadow z-10 font-semibold">
+        🔋 BAJA ENERGÍA
+      </div>
+      <div class="absolute left-0 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-4 py-2 rounded-full shadow z-10 font-semibold">
+        👎 BAJO AGRADO
+      </div>
+      <div class="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 bg-white px-4 py-2 rounded-full shadow z-10 font-semibold">
+        👍 ALTO AGRADO
+      </div>
+      
+      <!-- Cuadrantes -->
+      <div id="red-quadrant" class="relative flex flex-col items-center justify-center p-4 cursor-pointer transition-all hover:opacity-90 hover:scale-95" style="background-color: #F27052; grid-column: 1; grid-row: 1;">
+        <h3 class="text-xl font-semibold text-white text-center mb-2 drop-shadow">Emociones Intensas</h3>
+        <p class="text-sm text-white text-center opacity-90 drop-shadow">Alta energía - Bajo agrado</p>
+      </div>
+      
+      <div id="yellow-quadrant" class="relative flex flex-col items-center justify-center p-4 cursor-pointer transition-all hover:opacity-90 hover:scale-95" style="background-color: #FFDC51; grid-column: 2; grid-row: 1;">
+        <h3 class="text-xl font-semibold text-white text-center mb-2 drop-shadow">Emociones Positivas</h3>
+        <p class="text-sm text-white text-center opacity-90 drop-shadow">Alta energía - Alto agrado</p>
+      </div>
+      
+      <div id="blue-quadrant" class="relative flex flex-col items-center justify-center p-4 cursor-pointer transition-all hover:opacity-90 hover:scale-95" style="background-color: #51A8FF; grid-column: 1; grid-row: 2;">
+        <h3 class="text-xl font-semibold text-white text-center mb-2 drop-shadow">Emociones Bajas</h3>
+        <p class="text-sm text-white text-center opacity-90 drop-shadow">Baja energía - Bajo agrado</p>
+      </div>
+      
+      <div id="green-quadrant" class="relative flex flex-col items-center justify-center p-4 cursor-pointer transition-all hover:opacity-90 hover:scale-95" style="background-color: #92D36E; grid-column: 2; grid-row: 2;">
+        <h3 class="text-xl font-semibold text-white text-center mb-2 drop-shadow">Emociones Tranquilas</h3>
+        <p class="text-sm text-white text-center opacity-90 drop-shadow">Baja energía - Alto agrado</p>
+      </div>
+    </div>
+    
+    <!-- Panel de emociones (inicialmente oculto) -->
+    <div id="emotions-panel" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
+      <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md m-4">
+        <h3 id="emotions-title" class="text-xl font-bold mb-4">Selecciona una emoción</h3>
+        
+        <div id="emotions-container" class="grid grid-cols-1 gap-3 mb-4">
+          <!-- Las emociones se cargarán dinámicamente -->
+        </div>
+        
+        <button id="close-emotions" class="w-full py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all">
+          Cancelar
+        </button>
+      </div>
+    </div>
+    
+    <!-- Emoción seleccionada -->
+    <div id="selected-emotion-container" class="hidden w-full bg-gray-100 rounded-lg p-4 mb-6 text-center">
+      <span id="selected-emotion-emoji" class="text-2xl mr-2"></span>
+      <span id="selected-emotion-name" class="font-semibold text-lg"></span>
+    </div>
+    
+    <!-- Formulario -->
+    <div class="w-full">
+      <div class="mb-4">
+        <label for="notes" class="block font-semibold mb-2 text-gray-700">
+          ¿Hay algo específico que desees compartir sobre cómo te sientes?
+        </label>
+        <textarea
+          id="notes"
+          class="w-full p-3 border border-gray-300 rounded-lg resize-y h-32"
+          placeholder="Opcional: Describe brevemente por qué te sientes así..."
+        ></textarea>
+      </div>
+      
+      <button
+        id="submit-button"
+        class="w-full bg-blue-500 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-blue-600 transition-all"
+      >
+        Registrar mi estado de ánimo
+      </button>
+    </div>
+    
+    <!-- Mensaje de éxito -->
+    <div id="success-message" class="hidden w-full mt-4 bg-green-100 text-green-800 p-4 rounded-lg text-center">
+      ¡Gracias por compartir tu estado de ánimo! Tu registro ha sido guardado.
+    </div>
+    
+    <!-- Historial de estados de ánimo -->
+    <div id="history-container" class="w-full mt-8 hidden">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-gray-800">Historial de estados de ánimo</h2>
+        <button 
+          id="export-button"
+          class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all"
+        >
+          Exportar datos
+        </button>
+      </div>
+      
+      <div id="history-list" class="bg-white rounded-lg shadow-md overflow-hidden">
+        <!-- El historial se cargará dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

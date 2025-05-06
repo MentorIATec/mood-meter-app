@@ -1,0 +1,62 @@
+/* styles.css */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  /* Animaciones */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  
+  .hidden {
+    display: none !important;
+  }
+  
+  /* Panel de emociones */
+  #emotions-panel {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  #emotions-container button {
+    animation: slideIn 0.2s ease-out;
+  }
+  
+  /* Efecto hover en los cuadrantes */
+  #red-quadrant:hover,
+  #yellow-quadrant:hover,
+  #blue-quadrant:hover,
+  #green-quadrant:hover {
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Pulsación en botones */
+  button:active {
+    transform: scale(0.98);
+  }
+  
+  /* Mensaje de éxito */
+  #success-message {
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 640px) {
+    .container {
+      padding: 1rem;
+    }
+    
+    h1 {
+      font-size: 1.5rem;
+    }
+    
+    .absolute {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+    }
+  }
