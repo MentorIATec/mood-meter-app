@@ -9,6 +9,26 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-100 min-h-screen">
+<div id="login-screen" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+      <h2 class="text-xl font-bold mb-4">Identifícate</h2>
+      <div class="mb-4">
+        <label class="block mb-1">Nombre completo:</label>
+        <input type="text" id="student-name" class="w-full p-2 border rounded">
+      </div>
+      <div class="mb-4">
+        <label class="block mb-1">Matricula o Correo Electrónico:</label>
+        <input type="text" id="student-id" class="w-full p-2 border rounded">
+      </div>
+      <div class="mb-4">
+        <label class="block mb-1">Grupo:</label>
+        <input type="text" id="student-group" class="w-full p-2 border rounded">
+      </div>
+      <button id="login-button" class="w-full bg-blue-500 text-white font-semibold py-2 rounded">
+        Comenzar
+      </button>
+    </div>
+  </div>
   <div class="container mx-auto px-4 py-8 max-w-4xl">
     <h1 class="text-3xl font-bold text-gray-800 mb-2 text-center">¿Cómo te sientes hoy?</h1>
     <p class="text-lg text-gray-600 mb-6 text-center">Selecciona el cuadrante que mejor represente tu estado emocional actual</p>

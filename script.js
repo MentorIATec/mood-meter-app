@@ -1,5 +1,52 @@
 // script.js
 document.addEventListener('DOMContentLoaded', function() {
+    // Verificar si el usuario ya está logueado
+    const studentName = localStorage.getItem('studentName');
+    const studentId = localStorage.getItem('studentId');
+    const studentGroup = localStorage.getItem('studentGroup');
+    const loginScreen = document.getElementById('login-screen');
+  
+    if (studentName && studentId) {
+      // Usuario ya logueado, ocultar pantalla de login
+      if (loginScreen) {
+        loginScreen.classList.add('hidden');
+      }
+      console.log(`Usuario identificado: ${studentName} (${studentId})`);
+    } else if (loginScreen) {
+      // Mostrar pantalla de login
+      const loginButton = document.getElementById('login-button');
+      
+      if (loginButton) {
+        loginButton.addEventListener('click', function() {
+          const nameInput = document.getElementById('student-name');
+          const idInput = document.getElementById('student-id');
+          const groupInput = document.getElementById('student-group');
+          
+          if (!nameInput || !idInput) {
+            console.error('No se encontraron los campos de login');
+            return;
+          }
+          
+          const name = nameInput.value.trim();
+          const id = idInput.value.trim();
+          const group = groupInput ? groupInput.value.trim() : 'No especificado';
+          
+          if (name && id) {
+            localStorage.setItem('studentName', name);
+            localStorage.setItem('studentId', id);
+            localStorage.setItem('studentGroup', group);
+            
+            loginScreen.classList.add('hidden');
+            
+            // Mostrar mensaje de bienvenida
+            showNotification(`¡Bienvenido/a, ${name}!`);
+          } else {
+            alert('Por favor, completa tu nombre y matricula/correo');
+          }
+        });
+      }
+    }
+  
     // Definición de emociones por cuadrante
     const emotions = {
       red: [
@@ -154,33 +201,98 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const moodChartCanvas = document.getElementById('mood-chart');
   
+    // Verificar que todos los elementos existen
+    function checkElements() {
+      const elements = {
+        'red-quadrant': quadrantElements.red,
+        'yellow-quadrant': quadrantElements.yellow,
+        'blue-quadrant': quadrantElements.blue,
+        'green-quadrant': quadrantElements.green,
+        'emotions-panel': emotionsPanel,
+        'emotions-title': emotionsTitle,
+        'emotions-container': emotionsContainer,
+        'close-emotions': closeEmotionsBtn,
+        'selected-emotion-container': selectedEmotionContainer,
+        'selected-emotion-emoji': selectedEmotionEmoji,
+        'selected-emotion-name': selectedEmotionName,
+        'notes': notesTextarea,
+        'submit-button': submitButton,
+        'success-message': successMessage,
+        'recommendations-container': recommendationsContainer,
+        'recommendations-content': recommendationsContent,
+        'contact-mentor': contactMentorBtn,
+        'goal-setting': goalSettingContainer,
+        'goal-type': goalTypeSelect,
+        'goal-description': goalDescriptionTextarea,
+        'save-goal': saveGoalBtn,
+        'history-container': historyContainer,
+        'history-list': historyList,
+        'export-button': exportButton,
+        'email-data-button': emailDataButton,
+        'goals-list': goalsListContainer,
+        'no-goals-message': noGoalsMessage,
+        'mood-chart': moodChartCanvas
+      };
+      
+      const missingElements = [];
+      
+      for (const [id, element] of Object.entries(elements)) {
+        if (!element) {
+          missingElements.push(id);
+        }
+      }
+      
+      if (missingElements.length > 0) {
+        console.error('Elementos faltantes:', missingElements);
+      } else {
+        console.log('Todos los elementos están correctamente referenciados');
+      }
+    }
+  
     // Añadir event listeners a los cuadrantes
     Object.keys(quadrantElements).forEach(quadrant => {
-      quadrantElements[quadrant].addEventListener('click', () => {
-        currentQuadrant = quadrant;
-        showEmotionsPanel(quadrant);
-      });
+      const element = quadrantElements[quadrant];
+      if (element) {
+        element.addEventListener('click', () => {
+          currentQuadrant = quadrant;
+          showEmotionsPanel(quadrant);
+        });
+      } else {
+        console.error(`Elemento no encontrado: ${quadrant}-quadrant`);
+      }
     });
   
     // Cerrar panel de emociones
-    closeEmotionsBtn.addEventListener('click', () => {
-      emotionsPanel.classList.add('hidden');
-    });
+    if (closeEmotionsBtn) {
+      closeEmotionsBtn.addEventListener('click', () => {
+        emotionsPanel.classList.add('hidden');
+      });
+    }
   
     // Enviar formulario
-    submitButton.addEventListener('click', handleSubmit);
+    if (submitButton) {
+      submitButton.addEventListener('click', handleSubmit);
+    }
   
     // Exportar datos
-    exportButton.addEventListener('click', handleExport);
+    if (exportButton) {
+      exportButton.addEventListener('click', handleExport);
+    }
     
     // Enviar datos por correo
-    emailDataButton.addEventListener('click', emailData);
+    if (emailDataButton) {
+      emailDataButton.addEventListener('click', emailData);
+    }
     
     // Contactar mentora
-    contactMentorBtn.addEventListener('click', contactMentor);
+    if (contactMentorBtn) {
+      contactMentorBtn.addEventListener('click', contactMentor);
+    }
     
     // Guardar objetivo
-    saveGoalBtn.addEventListener('click', saveGoal);
+    if (saveGoalBtn) {
+      saveGoalBtn.addEventListener('click', saveGoal);
+    }
     
     // Cambio de pestañas
     tabButtons.forEach(button => {
@@ -196,24 +308,40 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Mostrar el contenido correspondiente
         const tabId = button.getAttribute('data-tab');
-        document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+        const tabContent = document.getElementById(`tab-${tabId}`);
         
-        // Actualizar pestaña activa
-        activeTab = tabId;
-        
-        // Si es la pestaña de tendencias, actualizar gráfico
-        if (tabId === 'trends') {
-          updateMoodChart();
+        if (tabContent) {
+          tabContent.classList.remove('hidden');
+          
+          // Actualizar pestaña activa
+          activeTab = tabId;
+          
+          // Si es la pestaña de tendencias, actualizar gráfico
+          if (tabId === 'trends') {
+            updateMoodChart();
+          }
+        } else {
+          console.error(`Contenido de pestaña no encontrado: tab-${tabId}`);
         }
       });
     });
   
     // Inicializar
+    checkElements();
     updateHistory();
     updateGoalsList();
+    console.log('Estado del historial:', moodHistory.length, 'registros');
+    console.log('Estado de objetivos:', goalHistory.length, 'objetivos');
+    // Intentar sincronizar registros pendientes
+    syncPendingMoods();
   
     // Funciones
     function showEmotionsPanel(quadrant) {
+      if (!emotionsPanel || !emotionsTitle || !emotionsContainer) {
+        console.error('Elementos del panel de emociones no encontrados');
+        return;
+      }
+      
       // Actualizar título
       emotionsTitle.textContent = `Selecciona una emoción - ${quadrants[quadrant].title}`;
       emotionsTitle.style.color = quadrants[quadrant].color;
@@ -243,6 +371,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   
     function selectEmotion(emotion, quadrant) {
+      if (!selectedEmotionContainer || !selectedEmotionEmoji || !selectedEmotionName) {
+        console.error('Elementos de emoción seleccionada no encontrados');
+        return;
+      }
+      
       selectedEmotion = {
         ...emotion,
         quadrant
@@ -254,23 +387,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   
     function handleSubmit() {
-        if (!selectedEmotion) {
-          alert('Por favor, selecciona una emoción antes de enviar');
-          return;
-        }
+      if (!selectedEmotion) {
+        alert('Por favor, selecciona una emoción antes de enviar');
+        return;
+      }
       
-        // Crear nuevo registro
-        const newEntry = {
-          id: Date.now(),
-          emotion: selectedEmotion.name,
-          emoji: selectedEmotion.emoji,
-          quadrant: selectedEmotion.quadrant,
-          notes: notesTextarea.value.trim(),
-          timestamp: new Date().toISOString()
-        };
-      
-        // *** NUEVO: Enviar a Google Sheets ***
-        sendToGoogleSheets(newEntry);
+      if (!notesTextarea || !successMessage) {
+        console.error('Elementos del formulario no encontrados');
+        return;
+      }
+    
+      // Crear nuevo registro
+      const newEntry = {
+        id: Date.now(),
+        emotion: selectedEmotion.name,
+        emoji: selectedEmotion.emoji,
+        quadrant: selectedEmotion.quadrant,
+        notes: notesTextarea.value.trim(),
+        timestamp: new Date().toISOString(),
+        studentName: localStorage.getItem('studentName') || '',
+        studentId: getStudentId(),
+        studentGroup: localStorage.getItem('studentGroup') || ''
+      };
+    
+      // Enviar a Google Sheets
+      console.log('Enviando datos a Google Sheets:', newEntry);
+      sendToGoogleSheets(newEntry);
   
       // Actualizar historial
       moodHistory = [newEntry, ...moodHistory];
@@ -283,9 +425,11 @@ document.addEventListener('DOMContentLoaded', function() {
       showRecommendations(selectedEmotion.quadrant);
       
       // Mostrar formulario de objetivos
-      setTimeout(() => {
-        goalSettingContainer.classList.remove('hidden');
-      }, 1000);
+      if (goalSettingContainer) {
+        setTimeout(() => {
+          goalSettingContainer.classList.remove('hidden');
+        }, 1000);
+      }
       
       // Limpiar formulario
       selectedEmotion = null;
@@ -305,6 +449,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   
     function showRecommendations(quadrant) {
+      if (!recommendationsContainer || !recommendationsContent) {
+        console.error('Elementos de recomendaciones no encontrados');
+        return;
+      }
+      
       // Limpiar contenedor
       recommendationsContent.innerHTML = '';
       
@@ -350,11 +499,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   
     function updateHistory() {
+      console.log('Actualizando historial...', moodHistory.length, 'registros');
+    
+      if (!historyContainer || !historyList) {
+        console.error('Elementos de historial no encontrados');
+        return;
+      }
+      
       if (moodHistory.length === 0) {
+        console.log('No hay registros de historial');
         historyContainer.classList.add('hidden');
         return;
       }
       
+      console.log('Mostrando historial');
       historyContainer.classList.remove('hidden');
       historyList.innerHTML = '';
       
@@ -403,8 +561,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function emailData() {
+      const studentName = localStorage.getItem('studentName') || '[Tu nombre]';
+      const studentId = getStudentId();
+      
       const subject = "Mis datos del Medidor de Estado de Ánimo";
-      let body = "Hola mentora,\n\nAquí están mis registros de estado de ánimo:\n\n";
+      let body = `Hola mentora,\n\nSoy ${studentName} (${studentId}).\n\nAquí están mis registros de estado de ánimo:\n\n`;
       
       moodHistory.slice(0, 5).forEach(entry => {
         body += `- ${entry.emoji} ${entry.emotion} (${formatDate(entry.timestamp)})\n`;
@@ -418,13 +579,14 @@ document.addEventListener('DOMContentLoaded', function() {
         body += `... y ${moodHistory.length - 5} registros más.\n\n`;
       }
       
-      body += "Me gustaría discutir estos resultados contigo.\n\nGracias,\n[Tu nombre]";
+      body += "Me gustaría discutir estos resultados contigo.\n\nGracias,\n" + studentName;
       
       window.location.href = `mailto:kareng@tec.mx?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     }
     
     function contactMentor() {
-      const studentName = prompt("Ingresa tu nombre:") || "Estudiante";
+      const defaultName = localStorage.getItem('studentName') || "Estudiante";
+      const studentName = prompt("Ingresa tu nombre:", defaultName) || defaultName;
       const message = prompt("¿Qué te gustaría compartir con tu mentora?") || "Me gustaría hablar sobre mi estado de ánimo actual.";
       
       const subject = `[Mood Meter] ${studentName} necesita apoyo`;
@@ -434,6 +596,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function saveGoal() {
+      if (!goalDescriptionTextarea) {
+        console.error('Elemento de descripción de objetivo no encontrado');
+        return;
+      }
+      
       if (!goalDescriptionTextarea.value.trim()) {
         alert("Por favor, describe tu objetivo");
         return;
@@ -442,11 +609,14 @@ document.addEventListener('DOMContentLoaded', function() {
       // Crear nuevo objetivo
       const newGoal = {
         id: Date.now(),
-        type: goalTypeSelect.value,
+        type: goalTypeSelect ? goalTypeSelect.value : 'general',
         description: goalDescriptionTextarea.value.trim(),
         completed: false,
         timestamp: new Date().toISOString(),
-        relatedMood: selectedEmotion ? selectedEmotion.quadrant : null
+        relatedMood: selectedEmotion ? selectedEmotion.quadrant : null,
+        studentName: localStorage.getItem('studentName') || '',
+        studentId: getStudentId(),
+        studentGroup: localStorage.getItem('studentGroup') || ''
       };
       
       // Actualizar historial de objetivos
@@ -461,14 +631,27 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // Limpiar y ocultar formulario
       goalDescriptionTextarea.value = '';
-      goalSettingContainer.classList.add('hidden');
+      if (goalSettingContainer) {
+        goalSettingContainer.classList.add('hidden');
+      }
       
       // Cambiar a la pestaña de objetivos
-      document.querySelector('.tab-btn[data-tab="goals"]').click();
+      const goalsTab = document.querySelector('.tab-btn[data-tab="goals"]');
+      if (goalsTab) {
+        goalsTab.click();
+      }
     }
     
     function updateGoalsList() {
+      console.log('Actualizando lista de objetivos...', goalHistory.length, 'objetivos');
+      
+      if (!goalsListContainer || !noGoalsMessage) {
+        console.error('Elementos de lista de objetivos no encontrados');
+        return;
+      }
+      
       if (goalHistory.length === 0) {
+        console.log('No hay objetivos registrados');
         noGoalsMessage.classList.remove('hidden');
         return;
       }
@@ -519,13 +702,19 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         
         // Añadir event listeners a los botones
-        goalElement.querySelector('.toggle-goal').addEventListener('click', () => {
-          toggleGoalStatus(goal.id);
-        });
+        const toggleButton = goalElement.querySelector('.toggle-goal');
+        if (toggleButton) {
+          toggleButton.addEventListener('click', () => {
+            toggleGoalStatus(goal.id);
+          });
+        }
         
-        goalElement.querySelector('.delete-goal').addEventListener('click', () => {
-          deleteGoal(goal.id);
-        });
+        const deleteButton = goalElement.querySelector('.delete-goal');
+        if (deleteButton) {
+          deleteButton.addEventListener('click', () => {
+            deleteGoal(goal.id);
+          });
+        }
         
         goalsListContainer.appendChild(goalElement);
       });
@@ -537,74 +726,87 @@ document.addEventListener('DOMContentLoaded', function() {
           return { ...goal, completed: !goal.completed };
         }
         return goal;
-      });
-      
+    });
+    
+    localStorage.setItem('goalHistory', JSON.stringify(goalHistory));
+    updateGoalsList();
+  }
+  
+  function deleteGoal(goalId) {
+    if (confirm('¿Estás seguro de que quieres eliminar este objetivo?')) {
+      goalHistory = goalHistory.filter(goal => goal.id !== goalId);
       localStorage.setItem('goalHistory', JSON.stringify(goalHistory));
       updateGoalsList();
     }
-    
-    function deleteGoal(goalId) {
-      if (confirm('¿Estás seguro de que quieres eliminar este objetivo?')) {
-        goalHistory = goalHistory.filter(goal => goal.id !== goalId);
-        localStorage.setItem('goalHistory', JSON.stringify(goalHistory));
-        updateGoalsList();
-      }
+  }
+  
+  function formatGoalType(type) {
+    switch(type) {
+      case 'academic': return 'Académico';
+      case 'wellbeing': return 'Bienestar';
+      case 'social': return 'Social';
+      default: return type;
+    }
+  }
+  
+  function updateMoodChart() {
+    if (!moodChartCanvas) {
+      console.error('Canvas para el gráfico no encontrado');
+      return;
     }
     
-    function formatGoalType(type) {
-      switch(type) {
-        case 'academic': return 'Académico';
-        case 'wellbeing': return 'Bienestar';
-        case 'social': return 'Social';
-        default: return type;
-      }
+    // Solo proceder si hay datos y el canvas existe
+    if (moodHistory.length === 0) {
+      console.log('No hay datos para crear el gráfico');
+      return;
     }
     
-    function updateMoodChart() {
-      // Solo proceder si hay datos y el canvas existe
-      if (moodHistory.length === 0 || !moodChartCanvas) {
-        return;
+    console.log('Actualizando gráfico de estados de ánimo');
+    
+    // Preparar datos para el gráfico
+    const lastEntries = [...moodHistory].reverse().slice(0, 10);
+    
+    const quadrantCounts = {
+      red: 0,
+      yellow: 0,
+      blue: 0,
+      green: 0
+    };
+    
+    // Contar ocurrencias de cada cuadrante
+    moodHistory.forEach(entry => {
+      if (entry.quadrant && quadrantCounts.hasOwnProperty(entry.quadrant)) {
+        quadrantCounts[entry.quadrant]++;
       }
-      
-      // Preparar datos para el gráfico
-      const lastEntries = [...moodHistory].reverse().slice(0, 10);
-      
-      const quadrantCounts = {
-        red: 0,
-        yellow: 0,
-        blue: 0,
-        green: 0
-      };
-      
-      // Contar ocurrencias de cada cuadrante
-      moodHistory.forEach(entry => {
-        if (entry.quadrant && quadrantCounts.hasOwnProperty(entry.quadrant)) {
-          quadrantCounts[entry.quadrant]++;
-        }
-      });
-      
-      // Datos para gráfico de barras
-      const barData = {
-        labels: ['Emociones Intensas', 'Emociones Positivas', 'Emociones Bajas', 'Emociones Tranquilas'],
-        datasets: [{
-          label: 'Distribución de estados de ánimo',
-          data: [
-            quadrantCounts.red,
-            quadrantCounts.yellow,
-            quadrantCounts.blue,
-            quadrantCounts.green
-          ],
-          backgroundColor: [
-            '#F27052',
-            '#FFDC51',
-            '#51A8FF',
-            '#92D36E'
-          ]
-        }]
-      };
-      
-      // Crear gráfico
-      new Chart(moodChartCanvas, {
+    });
+    
+    // Datos para gráfico de barras
+    const barData = {
+      labels: ['Emociones Intensas', 'Emociones Positivas', 'Emociones Bajas', 'Emociones Tranquilas'],
+      datasets: [{
+        label: 'Distribución de estados de ánimo',
+        data: [
+          quadrantCounts.red,
+          quadrantCounts.yellow,
+          quadrantCounts.blue,
+          quadrantCounts.green
+        ],
+        backgroundColor: [
+          '#F27052',
+          '#FFDC51',
+          '#51A8FF',
+          '#92D36E'
+        ]
+      }]
+    };
+    
+    // Crear gráfico (limpiar canvas primero si ya hay un gráfico)
+    if (window.moodChartInstance) {
+      window.moodChartInstance.destroy();
+    }
+    
+    try {
+      window.moodChartInstance = new Chart(moodChartCanvas, {
         type: 'bar',
         data: barData,
         options: {
@@ -620,49 +822,83 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         }
       });
+      console.log('Gráfico creado correctamente');
+    } catch (error) {
+      console.error('Error al crear el gráfico:', error);
     }
-  
-    function formatDate(dateString) {
-      const date = new Date(dateString);
-      return date.toLocaleString('es-ES', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric',
-        hour: '2-digit', 
-        minute: '2-digit'
-      });
-    }
-  });
-  // Función para enviar datos a Google Sheets
-function sendToGoogleSheets(moodData) {
-    // URL de tu implementación de Google Apps Script (reemplazar con tu URL real)
-    const scriptURL = 'https://script.google.com/a/macros/tec.mx/s/AKfycbzf016zR1XFok28Q-Se7MWTR-sVWNwR_z_H8xJgMjhpX4UlSi8jUc01xAA4i8rUKT-VHg/exec';
-    
-    // Preparar los datos para enviar
-    const formData = new FormData();
-    formData.append('timestamp', new Date().toISOString());
-    formData.append('emotion', moodData.emotion);
-    formData.append('emoji', moodData.emoji);
-    formData.append('quadrant', moodData.quadrant);
-    formData.append('notes', moodData.notes || '');
-    formData.append('studentId', getStudentId()); // Función para obtener ID único del estudiante
-    
-    // Enviar datos usando fetch
-    fetch(scriptURL, { method: 'POST', body: formData })
-      .then(response => {
-        console.log('Success!', response);
-        showNotification('Datos enviados correctamente a tu mentora');
-      })
-      .catch(error => {
-        console.error('Error!', error.message);
-        showNotification('Error al enviar datos. Guardados localmente.', 'error');
-        
-        // Guardar en localStorage como respaldo
-        saveMoodLocally(moodData);
-      });
+  }
+
+  function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString('es-ES', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit'
+    });
   }
   
-  // Función para obtener un ID único para el estudiante (temporal hasta implementar login)
+  // Función para enviar datos a Google Sheets con mejor manejo de errores
+  function sendToGoogleSheets(moodData) {
+    // URL de tu implementación de Google Apps Script
+    const scriptURL = 'https://script.google.com/a/macros/tec.mx/s/AKfycbzf016zR1XFok28Q-Se7MWTR-sVWNwR_z_H8xJgMjhpX4UlSi8jUc01xAA4i8rUKT-VHg/exec';
+    
+    // Datos a enviar (en formato JSON y FormData para mayor compatibilidad)
+    const jsonData = {
+      timestamp: new Date().toISOString(),
+      studentId: getStudentId(),
+      studentName: localStorage.getItem('studentName') || '',
+      studentGroup: localStorage.getItem('studentGroup') || '',
+      emotion: moodData.emotion,
+      emoji: moodData.emoji,
+      quadrant: moodData.quadrant,
+      notes: moodData.notes || ''
+    };
+    
+    // Para depuración
+    console.log('Enviando datos a Google Sheets:', jsonData);
+    
+    // Intentar primero con JSON
+    fetch(scriptURL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(jsonData)
+    })
+    .then(response => {
+      if (!response.ok) {
+        // Si falla con JSON, intentar con FormData
+        console.log('Intentando con FormData...');
+        const formData = new FormData();
+        
+        // Añadir todos los datos como campos de formulario
+        Object.entries(jsonData).forEach(([key, value]) => {
+          formData.append(key, value);
+        });
+        
+        return fetch(scriptURL, { 
+          method: 'POST', 
+          body: formData 
+        });
+      }
+      return response;
+    })
+    .then(response => {
+      console.log('Success!', response);
+      showNotification('Datos enviados correctamente a tu mentora');
+    })
+    .catch(error => {
+      console.error('Error al enviar datos:', error.message);
+      showNotification('Error al enviar datos. Guardados localmente.', 'error');
+      
+      // Guardar en localStorage como respaldo
+      saveMoodLocally(moodData);
+    });
+  }
+  
+  // Función para obtener un ID único para el estudiante
   function getStudentId() {
     // Verificar si ya existe un ID
     let studentId = localStorage.getItem('studentId');
@@ -678,18 +914,20 @@ function sendToGoogleSheets(moodData) {
   
   // Función para mostrar notificación
   function showNotification(message, type = 'success') {
+    const notificationsContainer = document.getElementById('notifications-container') || document.body;
+    
     const notification = document.createElement('div');
-    notification.className = `fixed bottom-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+    notification.className = `p-4 rounded-lg shadow-lg z-50 ${
       type === 'success' ? 'bg-green-500' : 'bg-red-500'
     } text-white`;
     notification.textContent = message;
     
-    document.body.appendChild(notification);
+    notificationsContainer.appendChild(notification);
     
     // Remover después de 3 segundos
     setTimeout(() => {
       notification.remove();
-    }, 3000);
+    }, 5000);
   }
   
   // Función auxiliar para guardar datos localmente como respaldo
@@ -706,3 +944,40 @@ function sendToGoogleSheets(moodData) {
     // Guardar actualización
     localStorage.setItem('moodBackup', JSON.stringify(localBackup));
   }
+  
+  // Función para sincronizar estados de ánimo pendientes
+  function syncPendingMoods() {
+    const pendingMoods = JSON.parse(localStorage.getItem('moodBackup') || '[]');
+    
+    if (pendingMoods.length === 0) {
+      console.log('No hay registros pendientes para sincronizar');
+      return;
+    }
+    
+    console.log(`Intentando sincronizar ${pendingMoods.length} registros pendientes`);
+    
+    // Filtrar solo los pendientes de sincronización
+    const toSync = pendingMoods.filter(mood => mood.pendingSync);
+    
+    // Intentar sincronizar cada uno
+    let syncedCount = 0;
+    
+    toSync.forEach(async (mood, index) => {
+      try {
+        await new Promise(resolve => setTimeout(resolve, index * 1000)); // Espaciar las solicitudes
+        sendToGoogleSheets(mood);
+        mood.pendingSync = false;
+        syncedCount++;
+      } catch (error) {
+        console.error('Error syncing mood:', error);
+      }
+    });
+    
+    // Actualizar el almacenamiento local
+    localStorage.setItem('moodBackup', JSON.stringify(pendingMoods));
+    
+    if (syncedCount > 0) {
+      showNotification(`Se sincronizaron ${syncedCount} registros pendientes`);
+    }
+  }
+});
