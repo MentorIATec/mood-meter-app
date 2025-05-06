@@ -14,44 +14,37 @@
     <h1 class="text-3xl font-bold text-gray-800 mb-2 text-center">¿Cómo te sientes hoy?</h1>
     <p class="text-lg text-gray-600 mb-6 text-center">Selecciona el cuadrante que mejor represente tu estado emocional actual</p>
     
-    <!-- Mood Meter Grid -->
-    <div class="relative grid grid-cols-2 grid-rows-2 w-full h-80 rounded-lg overflow-hidden shadow-md mb-8">
-      <!-- Etiquetas de ejes -->
-      <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-4 py-2 rounded-full shadow z-10 font-semibold">
-        ⚡ ALTA ENERGÍA
-      </div>
-      <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-white px-4 py-2 rounded-full shadow z-10 font-semibold">
-        🔋 BAJA ENERGÍA
-      </div>
-      <div class="absolute left-0 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-4 py-2 rounded-full shadow z-10 font-semibold">
-        👎 BAJO AGRADO
-      </div>
-      <div class="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 bg-white px-4 py-2 rounded-full shadow z-10 font-semibold">
-        👍 ALTO AGRADO
-      </div>
-      
-      <!-- Cuadrantes -->
-      <div id="red-quadrant" class="relative flex flex-col items-center justify-center p-4 cursor-pointer transition-all hover:opacity-90 hover:scale-95" style="background-color: #F27052; grid-column: 1; grid-row: 1;">
+    <!-- Mood Meter con diseño responsivo -->
+<div class="mood-meter-container">
+    <!-- Etiquetas de ejes -->
+    <div class="axis-label top-label">⚡ ALTA ENERGÍA</div>
+    <div class="axis-label bottom-label">🔋 BAJA ENERGÍA</div>
+    <div class="axis-label left-label">👎 BAJO AGRADO</div>
+    <div class="axis-label right-label">👍 ALTO AGRADO</div>
+    
+    <!-- Cuadrantes -->
+    <div class="mood-grid shadow-md">
+      <div id="red-quadrant" class="mood-quadrant" style="background-color: #F27052;">
         <h3 class="text-xl font-semibold text-white text-center mb-2 drop-shadow">Emociones Intensas</h3>
         <p class="text-sm text-white text-center opacity-90 drop-shadow">Alta energía - Bajo agrado</p>
       </div>
       
-      <div id="yellow-quadrant" class="relative flex flex-col items-center justify-center p-4 cursor-pointer transition-all hover:opacity-90 hover:scale-95" style="background-color: #FFDC51; grid-column: 2; grid-row: 1;">
+      <div id="yellow-quadrant" class="mood-quadrant" style="background-color: #FFDC51;">
         <h3 class="text-xl font-semibold text-white text-center mb-2 drop-shadow">Emociones Positivas</h3>
         <p class="text-sm text-white text-center opacity-90 drop-shadow">Alta energía - Alto agrado</p>
       </div>
       
-      <div id="blue-quadrant" class="relative flex flex-col items-center justify-center p-4 cursor-pointer transition-all hover:opacity-90 hover:scale-95" style="background-color: #51A8FF; grid-column: 1; grid-row: 2;">
+      <div id="blue-quadrant" class="mood-quadrant" style="background-color: #51A8FF;">
         <h3 class="text-xl font-semibold text-white text-center mb-2 drop-shadow">Emociones Bajas</h3>
         <p class="text-sm text-white text-center opacity-90 drop-shadow">Baja energía - Bajo agrado</p>
       </div>
       
-      <div id="green-quadrant" class="relative flex flex-col items-center justify-center p-4 cursor-pointer transition-all hover:opacity-90 hover:scale-95" style="background-color: #92D36E; grid-column: 2; grid-row: 2;">
+      <div id="green-quadrant" class="mood-quadrant" style="background-color: #92D36E;">
         <h3 class="text-xl font-semibold text-white text-center mb-2 drop-shadow">Emociones Tranquilas</h3>
         <p class="text-sm text-white text-center opacity-90 drop-shadow">Baja energía - Alto agrado</p>
       </div>
     </div>
-    
+  </div>
     <!-- Panel de emociones (inicialmente oculto) -->
     <div id="emotions-panel" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30">
       <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md m-4">
