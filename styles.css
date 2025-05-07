@@ -67,7 +67,7 @@ body {
     position: relative;
   }
   
-  /* Efecto hover en los cuadrantes (ambos selectores para compatibilidad) */
+  /* Efecto hover en los cuadrantes */
   .mood-quadrant:hover,
   #red-quadrant:hover,
   #yellow-quadrant:hover,
@@ -190,6 +190,18 @@ body {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
   
+  /* Notificaciones */
+  #notifications-container div {
+    animation: slideIn 0.3s ease-out;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Estilo para estadísticas en la pestaña de tendencias */
+  .stats-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  
   /* Estilos responsivos */
   @media (max-width: 640px) {
     .container {
@@ -241,5 +253,14 @@ body {
       transform: rotate(45deg) translate(30%, -50%);
       transform-origin: top right;
       writing-mode: horizontal-tb;
+    }
+    
+    /* Ajustes para los gráficos en dispositivos pequeños */
+    .grid-cols-1 {
+      grid-template-columns: 1fr;
+    }
+    
+    canvas {
+      max-height: 300px;
     }
   }
