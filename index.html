@@ -6,10 +6,13 @@
   <title>Medidor de Estado de Ánimo</title>
   <!-- Tailwind CSS desde CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js para visualizaciones -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-100 min-h-screen">
-<div id="login-screen" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+  <!-- Pantalla de login -->
+  <div id="login-screen" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
       <h2 class="text-xl font-bold mb-4">Identifícate</h2>
       <div class="mb-4">
@@ -29,6 +32,8 @@
       </button>
     </div>
   </div>
+  
+  <!-- Contenido principal -->
   <div class="container mx-auto px-4 py-8 max-w-4xl">
     <h1 class="text-3xl font-bold text-gray-800 mb-2 text-center">¿Cómo te sientes hoy?</h1>
     <p class="text-lg text-gray-600 mb-6 text-center">Selecciona el cuadrante que mejor represente tu estado emocional actual</p>
@@ -175,18 +180,6 @@
           <h2 class="text-2xl font-bold text-gray-800">Historial de estados de ánimo</h2>
           <div class="flex space-x-2">
             <button 
-              id="export-button"
-              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all"
-            >
-              Exportar datos
-            </button>
-            <button 
-              id="sync-button"
-              class="px-4 py-2 bg-green-200 text-green-700 rounded-lg hover:bg-green-300 transition-all"
-            >
-              Sincronizar datos
-            </button>
-            <button 
               id="email-data-button"
               class="px-4 py-2 bg-blue-200 text-blue-700 rounded-lg hover:bg-blue-300 transition-all"
             >
@@ -207,11 +200,11 @@
       </div>
     </div>
     
+    <!-- Pestaña de tendencias - estructura básica, se completa con JavaScript -->
     <div id="tab-trends" class="tab-content mt-4 hidden">
       <h2 class="text-2xl font-bold text-gray-800 mb-4">Tendencias de tus estados de ánimo</h2>
-      <div class="bg-white rounded-lg shadow-md p-4">
-        <canvas id="mood-chart" height="300"></canvas>
-      </div>
+      
+      <!-- El contenido se generará dinámicamente con updateTrendsTabContent() -->
     </div>
     
     <div id="tab-goals" class="tab-content mt-4 hidden">
@@ -253,9 +246,11 @@
       </div>
     </div>
   </div>
-<div id="notifications-container" class="fixed bottom-4 right-4 z-50"></div>
-  <!-- Script para gráficos -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Contenedor de notificaciones -->
+  <div id="notifications-container" class="fixed bottom-4 right-4 z-50"></div>
+  
+  <!-- Scripts -->
   <script src="script.js"></script>
 </body>
 </html>
