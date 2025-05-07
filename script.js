@@ -157,6 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let moodHistory = JSON.parse(localStorage.getItem('moodHistory')) || [];
     let goalHistory = JSON.parse(localStorage.getItem('goalHistory')) || [];
     let activeTab = 'history';
+    let currentFilterMode = 'all'; // Para filtros en la pestaña de tendencias
   
     // Elementos del DOM
     const quadrantElements = {
@@ -190,7 +191,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const historyContainer = document.getElementById('history-container');
     const historyList = document.getElementById('history-list');
-    const exportButton = document.getElementById('export-button');
     const emailDataButton = document.getElementById('email-data-button');
     
     const tabButtons = document.querySelectorAll('.tab-btn');
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const moodChartCanvas = document.getElementById('mood-chart');
   
-    // Verificar que todos los elementos existen
+    // Verificar que todos los elementos existen (útil para depuración)
     function checkElements() {
       const elements = {
         'red-quadrant': quadrantElements.red,
@@ -227,7 +227,6 @@ document.addEventListener('DOMContentLoaded', function() {
         'save-goal': saveGoalBtn,
         'history-container': historyContainer,
         'history-list': historyList,
-        'export-button': exportButton,
         'email-data-button': emailDataButton,
         'goals-list': goalsListContainer,
         'no-goals-message': noGoalsMessage,
@@ -272,11 +271,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Enviar formulario
     if (submitButton) {
       submitButton.addEventListener('click', handleSubmit);
-    }
-  
-    // Exportar datos
-    if (exportButton) {
-      exportButton.addEventListener('click', handleExport);
     }
     
     // Enviar datos por correo
@@ -326,14 +320,22 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   
-    // Añadir después de los otros event listeners
+    // Añadir listener para borrar historial
     if (document.getElementById('clear-history-button')) {
       document.getElementById('clear-history-button').addEventListener('click', clearMoodHistory);
     }
-    
-    // Añadir después de la sección de event listeners
-    if (document.getElementById('sync-button')) {
-      document.getElementById('sync-button').addEventListener('click', syncPendingMoods);
+
+    // Event listeners para los botones de filtro
+    function setupFilterEventListeners() {
+      const filterAll = document.getElementById('filter-all');
+      const filterMonth = document.getElementById('filter-month');
+      const filterWeek = document.getElementById('filter-week');
+      const filterDay = document.getElementById('filter-day');
+      
+      if (filterAll) filterAll.addEventListener('click', () => filterData('all'));
+      if (filterMonth) filterMonth.addEventListener('click', () => filterData('month'));
+      if (filterWeek) filterWeek.addEventListener('click', () => filterData('week'));
+      if (filterDay) filterDay.addEventListener('click', () => filterData('day'));
     }
 
     // Inicializar
@@ -342,8 +344,6 @@ document.addEventListener('DOMContentLoaded', function() {
     updateGoalsList();
     console.log('Estado del historial:', moodHistory.length, 'registros');
     console.log('Estado de objetivos:', goalHistory.length, 'objetivos');
-    // Intentar sincronizar registros pendientes
-    syncPendingMoods();
   
     // Funciones
     function showEmotionsPanel(quadrant) {
@@ -420,11 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
         studentGroup: localStorage.getItem('studentGroup') || ''
       };
     
-      // Enviar a Google Sheets
-      console.log('Enviando datos a Google Sheets:', newEntry);
-      sendToGoogleSheets(newEntry);
-  
-      // Actualizar historial
+      // Guardar localmente
       moodHistory = [newEntry, ...moodHistory];
       localStorage.setItem('moodHistory', JSON.stringify(moodHistory));
       
@@ -557,18 +553,6 @@ document.addEventListener('DOMContentLoaded', function() {
         historyList.appendChild(entryElement);
       });
     }
-  
-    function handleExport() {
-      const dataStr = JSON.stringify(moodHistory, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-      
-      const exportFileDefaultName = 'mood_history.json';
-      
-      const linkElement = document.createElement('a');
-      linkElement.setAttribute('href', dataUri);
-      linkElement.setAttribute('download', exportFileDefaultName);
-      linkElement.click();
-    }
     
     function emailData() {
       const studentName = localStorage.getItem('studentName') || '[Tu nombre]';
@@ -591,7 +575,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       body += "Me gustaría discutir estos resultados contigo.\n\nGracias,\n" + studentName;
       
-      window.location.href = `mailto:kareng@tec.mx?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = `mailto:mentor@example.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     }
     
     function contactMentor() {
@@ -602,7 +586,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const subject = `[Mood Meter] ${studentName} necesita apoyo`;
       const body = `Hola mentora,\n\nSoy ${studentName}. ${message}\n\nGracias.`;
       
-      window.location.href = `mailto:kareng@tec.mx?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = `mailto:mentor@example.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     }
     
     function saveGoal() {
@@ -730,10 +714,9 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
     
-    // Añadir la función de borrado
+    // Función para borrar historial
     function clearMoodHistory() {
       if (confirm('¿Estás seguro de que quieres borrar todo tu historial de estados de ánimo? Esta acción no se puede deshacer.')) {
-        // Borrar solo del almacenamiento local (no de Google Sheets)
         localStorage.setItem('moodHistory', JSON.stringify([]));
         moodHistory = [];
         updateHistory();
@@ -776,23 +759,103 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     
-    function updateMoodChart() {
-      if (!moodChartCanvas) {
-        console.error('Canvas para el gráfico no encontrado');
+    // Función para filtrar datos según el período seleccionado
+    function filterData(period) {
+      // Actualizar modo de filtro actual
+      currentFilterMode = period;
+      
+      // Resaltar el botón activo
+      const filterButtons = ['filter-all', 'filter-month', 'filter-week', 'filter-day'];
+      filterButtons.forEach(id => {
+        const button = document.getElementById(id);
+        if (button) {
+          if (id === `filter-${period === 'all' ? 'all' : period}`) {
+            button.classList.remove('bg-gray-100', 'text-gray-700');
+            button.classList.add('bg-blue-100', 'text-blue-700');
+          } else {
+            button.classList.remove('bg-blue-100', 'text-blue-700');
+            button.classList.add('bg-gray-100', 'text-gray-700');
+          }
+        }
+      });
+      
+      // Filtrar los datos según el período seleccionado
+      let filteredHistory = [...moodHistory];
+      const now = new Date();
+      
+      if (period === 'month') {
+        const oneMonthAgo = new Date(now);
+        oneMonthAgo.setMonth(now.getMonth() - 1);
+        filteredHistory = moodHistory.filter(entry => new Date(entry.timestamp) >= oneMonthAgo);
+      } else if (period === 'week') {
+        const oneWeekAgo = new Date(now);
+        oneWeekAgo.setDate(now.getDate() - 7);
+        filteredHistory = moodHistory.filter(entry => new Date(entry.timestamp) >= oneWeekAgo);
+      } else if (period === 'day') {
+        const today = new Date(now);
+        today.setHours(0, 0, 0, 0);
+        filteredHistory = moodHistory.filter(entry => new Date(entry.timestamp) >= today);
+      }
+      
+      // Actualizar gráficos con datos filtrados
+      updateChartsWithFilteredData(filteredHistory);
+    }
+    
+    // Función para actualizar gráficos con datos filtrados
+    function updateChartsWithFilteredData(filteredData) {
+      const tempMoodHistory = moodHistory; // Guardar historial original
+      moodHistory = filteredData; // Reemplazar temporalmente con datos filtrados
+      
+      // Actualizar todos los gráficos
+      updateBasicChart();
+      createTimelineChart();
+      createEmotionDistributionRadar();
+      createMoodTrendsChart();
+      updateStatsSummary();
+      
+      // Restaurar historial original
+      moodHistory = tempMoodHistory;
+    }
+    
+    // Función para actualizar las estadísticas de resumen
+    function updateStatsSummary() {
+      // Elementos de estadísticas
+      const totalCountEl = document.getElementById('stats-total-count');
+      const topEmotionEl = document.getElementById('stats-top-emotion');
+      const dominantQuadrantEl = document.getElementById('stats-dominant-quadrant');
+      const consistencyEl = document.getElementById('stats-consistency');
+      
+      if (!totalCountEl || !topEmotionEl || !dominantQuadrantEl || !consistencyEl) {
+        console.error('No se encontraron elementos de estadísticas');
         return;
       }
       
-      // Solo proceder si hay datos y el canvas existe
-      if (moodHistory.length === 0) {
-        console.log('No hay datos para crear el gráfico');
+      // Total de registros
+      const totalCount = moodHistory.length;
+      totalCountEl.textContent = totalCount;
+      
+      if (totalCount === 0) {
+        topEmotionEl.textContent = '-';
+        dominantQuadrantEl.textContent = '-';
+        consistencyEl.textContent = '0%';
         return;
       }
       
-      console.log('Actualizando gráfico de estados de ánimo');
+      // Emoción más frecuente
+      const emotionCounts = {};
+      moodHistory.forEach(entry => {
+        if (!emotionCounts[entry.emotion]) {
+          emotionCounts[entry.emotion] = 0;
+        }
+        emotionCounts[entry.emotion]++;
+      });
       
-      // Preparar datos para el gráfico
-      const lastEntries = [...moodHistory].reverse().slice(0, 10);
+      const topEmotion = Object.entries(emotionCounts)
+        .sort((a, b) => b[1] - a[1])[0];
       
+      topEmotionEl.innerHTML = `${topEmotion[0]} <span class="text-xl">${moodHistory.find(e => e.emotion === topEmotion[0]).emoji}</span>`;
+      
+      // Cuadrante dominante
       const quadrantCounts = {
         red: 0,
         yellow: 0,
@@ -800,7 +863,76 @@ document.addEventListener('DOMContentLoaded', function() {
         green: 0
       };
       
+      moodHistory.forEach(entry => {
+        if (entry.quadrant && quadrantCounts.hasOwnProperty(entry.quadrant)) {
+          quadrantCounts[entry.quadrant]++;
+        }
+      });
+      
+      const dominantQuadrant = Object.entries(quadrantCounts)
+        .sort((a, b) => b[1] - a[1])[0][0];
+      
+      dominantQuadrantEl.textContent = quadrants[dominantQuadrant].title;
+      dominantQuadrantEl.style.color = quadrants[dominantQuadrant].color;
+      
+      // Consistencia (registros por día)
+      const dayCount = {};
+      moodHistory.forEach(entry => {
+        const date = new Date(entry.timestamp).toISOString().split('T')[0]; // YYYY-MM-DD
+        if (!dayCount[date]) {
+          dayCount[date] = 0;
+        }
+        dayCount[date]++;
+      });
+      
+      const totalDays = Object.keys(dayCount).length;
+      const consistencyPercentage = Math.round((totalDays / 30) * 100); // Usando 30 días como referencia
+      
+      consistencyEl.textContent = `${consistencyPercentage}%`;
+    }
+    
+    function updateMoodChart() {
+      // Verificar si estamos en la pestaña de tendencias
+      if (activeTab === 'trends') {
+        // Actualizar estructura HTML primero
+        updateTrendsTabContent();
+        
+        // Si no hay datos, mostrar mensaje
+        if (moodHistory.length === 0) {
+          console.log('No hay datos para crear los gráficos');
+          return;
+        }
+        
+        console.log('Actualizando gráficos...');
+        
+        // Crear gráficos
+        updateBasicChart();
+        createTimelineChart();
+        createEmotionDistributionRadar();
+        createMoodTrendsChart();
+        updateStatsSummary();
+        
+        // Configurar los listeners de los botones de filtro
+        setupFilterEventListeners();
+      }
+    }
+    
+    // Función para crear/actualizar el gráfico básico de distribución por cuadrantes
+    function updateBasicChart() {
+      const moodChartCanvas = document.getElementById('mood-chart');
+      if (!moodChartCanvas) {
+        console.error('Canvas para el gráfico no encontrado');
+        return;
+      }
+      
       // Contar ocurrencias de cada cuadrante
+      const quadrantCounts = {
+        red: 0,
+        yellow: 0,
+        blue: 0,
+        green: 0
+      };
+      
       moodHistory.forEach(entry => {
         if (entry.quadrant && quadrantCounts.hasOwnProperty(entry.quadrant)) {
           quadrantCounts[entry.quadrant]++;
@@ -827,7 +959,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }]
       };
       
-      // Crear gráfico (limpiar canvas primero si ya hay un gráfico)
+      // Destruir gráfico anterior si existe
       if (window.moodChartInstance) {
         window.moodChartInstance.destroy();
       }
@@ -844,15 +976,473 @@ document.addEventListener('DOMContentLoaded', function() {
               },
               title: {
                 display: true,
-                text: 'Distribución de tus estados de ánimo'
+                text: 'Distribución de tus estados de ánimo',
+                font: {
+                  size: 16
+                }
               }
             }
           }
         });
-        console.log('Gráfico creado correctamente');
+        console.log('Gráfico de barras creado correctamente');
       } catch (error) {
-        console.error('Error al crear el gráfico:', error);
+        console.error('Error al crear el gráfico de barras:', error);
       }
+    }
+  
+    // Gráfico de línea temporal que muestra la evolución de emociones
+    function createTimelineChart() {
+      const timelineCanvas = document.getElementById('timeline-chart');
+      if (!timelineCanvas) {
+        console.error('Canvas para el gráfico de línea temporal no encontrado');
+        return;
+      }
+      
+      // Preparar datos (limitamos a los últimos 30 registros para mejor visualización)
+      const entries = [...moodHistory].slice(0, 30).reverse();
+      
+      if (entries.length === 0) {
+        console.log('No hay datos suficientes para el gráfico de línea temporal');
+        return;
+      }
+      
+      // Mapear cuadrantes a valores numéricos
+      const quadrantValues = {
+        yellow: 3, // Emociones Positivas (Alta energía, Alto agrado)
+        green: 2,  // Emociones Tranquilas (Baja energía, Alto agrado)
+        red: 1,    // Emociones Intensas (Alta energía, Bajo agrado)
+        blue: 0    // Emociones Bajas (Baja energía, Bajo agrado)
+      };
+      
+      // Preparar datos para Chart.js
+      const timelineData = {
+        labels: entries.map(entry => {
+          const date = new Date(entry.timestamp);
+          return date.toLocaleDateString('es-ES', { 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit'
+          });
+        }),
+        datasets: [{
+          label: 'Estado Emocional',
+          data: entries.map(entry => quadrantValues[entry.quadrant] || 0),
+          backgroundColor: entries.map(entry => quadrants[entry.quadrant]?.color || '#ccc'),
+          borderColor: entries.map(entry => quadrants[entry.quadrant]?.color || '#ccc'),
+          borderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 8,
+          tension: 0.3,
+          fill: false
+        }]
+      };
+      
+      // Configuración del gráfico
+      const timelineConfig = {
+        type: 'line',
+        data: timelineData,
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const index = context.dataIndex;
+                  const entry = entries[index];
+                  return `${entry.emoji} ${entry.emotion}`;
+                },
+                afterLabel: function(context) {
+                  const index = context.dataIndex;
+                  const entry = entries[index];
+                  return entry.notes ? `Nota: ${entry.notes}` : '';
+                }
+              }
+            },
+            title: {
+              display: true,
+              text: 'Evolución de tu estado emocional',
+              font: {
+                size: 16
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: -0.5,
+              max: 3.5,
+              ticks: {
+                callback: function(value) {
+                  const labels = ['Emociones Bajas', 'Emociones Intensas', 'Emociones Tranquilas', 'Emociones Positivas'];
+                  return labels[value] || '';
+                },
+                stepSize: 1
+              },
+              grid: {
+                color: 'rgba(200, 200, 200, 0.2)'
+              }
+            },
+            x: {
+              ticks: {
+                maxRotation: 45,
+                minRotation: 45
+              },
+              grid: {
+                display: false
+              }
+            }
+          }
+        }
+      };
+      
+      // Destruir gráfico anterior si existe
+      if (window.timelineChartInstance) {
+        window.timelineChartInstance.destroy();
+      }
+      
+      // Crear nuevo gráfico
+      window.timelineChartInstance = new Chart(timelineCanvas, timelineConfig);
+      console.log('Gráfico de línea temporal creado');
+    }
+  
+    // Gráfico de radar para visualizar la distribución de emociones
+    function createEmotionDistributionRadar() {
+      const radarCanvas = document.getElementById('emotion-radar');
+      if (!radarCanvas) {
+        console.error('Canvas para el gráfico de radar no encontrado');
+        return;
+      }
+      
+      // Contar ocurrencias de cada emoción
+      const emotionCounts = {};
+      
+      moodHistory.forEach(entry => {
+        if (!emotionCounts[entry.emotion]) {
+          emotionCounts[entry.emotion] = 0;
+        }
+        emotionCounts[entry.emotion]++;
+      });
+      
+      if (Object.keys(emotionCounts).length === 0) {
+        console.log('No hay datos suficientes para el gráfico de radar');
+        return;
+      }
+      
+      // Ordenar las emociones por frecuencia y tomar las 10 principales
+      const topEmotions = Object.entries(emotionCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+      
+      // Obtener el cuadrante para cada emoción
+      const emotionQuadrants = {};
+      
+      for (const quadrant in emotions) {
+        emotions[quadrant].forEach(emotion => {
+          emotionQuadrants[emotion.name] = quadrant;
+        });
+      }
+      
+      // Preparar datos para Chart.js
+      const radarData = {
+        labels: topEmotions.map(([emotion]) => emotion),
+        datasets: [{
+          label: 'Frecuencia',
+          data: topEmotions.map(([_, count]) => count),
+          backgroundColor: topEmotions.map(([emotion]) => {
+            const quadrant = emotionQuadrants[emotion] || 'blue';
+            return quadrants[quadrant]?.color ? `${quadrants[quadrant].color}80` : '#cccccc80'; // Con transparencia (80 = 50%)
+          }),
+          borderColor: topEmotions.map(([emotion]) => {
+            const quadrant = emotionQuadrants[emotion] || 'blue';
+            return quadrants[quadrant]?.color || '#cccccc';
+          }),
+          borderWidth: 2,
+          pointBackgroundColor: topEmotions.map(([emotion]) => {
+            const quadrant = emotionQuadrants[emotion] || 'blue';
+            return quadrants[quadrant]?.color || '#cccccc';
+          }),
+          pointRadius: 5
+        }]
+      };
+      
+      // Configuración del gráfico
+      const radarConfig = {
+        type: 'radar',
+        data: radarData,
+        options: {
+          responsive: true,
+          scales: {
+            r: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Tus Emociones Más Frecuentes',
+              font: {
+                size: 16
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const emotion = context.label;
+                  const count = context.raw;
+                  const quadrant = emotionQuadrants[emotion] || 'desconocido';
+                  return `${emotion} (${quadrants[quadrant]?.title || 'Desconocido'}): ${count} veces`;
+                }
+              }
+            }
+          }
+        }
+      };
+      
+      // Destruir gráfico anterior si existe
+      if (window.emotionRadarInstance) {
+        window.emotionRadarInstance.destroy();
+      }
+      
+      // Crear nuevo gráfico
+      window.emotionRadarInstance = new Chart(radarCanvas, radarConfig);
+      console.log('Gráfico de radar creado');
+    }
+  
+    // Gráfico de tendencias de estado de ánimo por periodo
+    function createMoodTrendsChart() {
+      const trendsCanvas = document.getElementById('mood-trends-chart');
+      if (!trendsCanvas) {
+        console.error('Canvas para el gráfico de tendencias no encontrado');
+        return;
+      }
+      
+      if (moodHistory.length === 0) {
+        console.log('No hay datos suficientes para el gráfico de tendencias');
+        return;
+      }
+      
+      // Agrupar por día o semana según la cantidad de datos
+      const useDailyData = moodHistory.length < 30; // Usar datos diarios si hay pocos registros
+      
+      // Función para obtener la clave de agrupación
+      function getGroupKey(date) {
+        if (useDailyData) {
+          // Agrupar por día
+          return date.toISOString().slice(0, 10); // YYYY-MM-DD
+        } else {
+          // Agrupar por semana (formato: "YYYY-WW")
+          const onejan = new Date(date.getFullYear(), 0, 1);
+          const weekNum = Math.ceil((((date - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+          return `${date.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`;
+        }
+      }
+      
+      // Inicializar contadores por cuadrante
+      const groupedData = {};
+      
+      // Recorrer el historial y agrupar por periodo
+      moodHistory.forEach(entry => {
+        const date = new Date(entry.timestamp);
+        const key = getGroupKey(date);
+        
+        // Inicializar si no existe
+        if (!groupedData[key]) {
+          groupedData[key] = {
+            red: 0,
+            yellow: 0,
+            blue: 0,
+            green: 0,
+            total: 0,
+            label: useDailyData 
+              ? date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) 
+              : `Semana ${key.split('-W')[1]}`
+          };
+        }
+        
+        // Incrementar contador del cuadrante correspondiente
+        if (entry.quadrant && groupedData[key].hasOwnProperty(entry.quadrant)) {
+          groupedData[key][entry.quadrant]++;
+          groupedData[key].total++;
+        }
+      });
+      
+      // Convertir a arrays para Chart.js
+      const periods = Object.keys(groupedData).sort(); // Ordenar cronológicamente
+      const labels = periods.map(period => groupedData[period].label);
+      
+      // Generar conjuntos de datos
+      const datasets = [
+        {
+          label: 'Emociones Positivas',
+          data: periods.map(period => (groupedData[period].total > 0 ? (groupedData[period].yellow / groupedData[period].total) * 100 : 0)),
+          backgroundColor: quadrants.yellow.color,
+          borderColor: quadrants.yellow.color,
+          borderWidth: 2,
+          tension: 0.3
+        },
+        {
+          label: 'Emociones Tranquilas',
+          data: periods.map(period => (groupedData[period].total > 0 ? (groupedData[period].green / groupedData[period].total) * 100 : 0)),
+          backgroundColor: quadrants.green.color,
+          borderColor: quadrants.green.color,
+          borderWidth: 2,
+          tension: 0.3
+        },
+        {
+          label: 'Emociones Intensas',
+          data: periods.map(period => (groupedData[period].total > 0 ? (groupedData[period].red / groupedData[period].total) * 100 : 0)),
+          backgroundColor: quadrants.red.color,
+          borderColor: quadrants.red.color,
+          borderWidth: 2,
+          tension: 0.3
+        },
+        {
+          label: 'Emociones Bajas',
+          data: periods.map(period => (groupedData[period].total > 0 ? (groupedData[period].blue / groupedData[period].total) * 100 : 0)),
+          backgroundColor: quadrants.blue.color,
+          borderColor: quadrants.blue.color,
+          borderWidth: 2,
+          tension: 0.3
+        }
+      ];
+      
+      // Configuración del gráfico
+      const trendsConfig = {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: `Tendencias de Estado de Ánimo por ${useDailyData ? 'Día' : 'Semana'}`,
+              font: {
+                size: 16
+              }
+            },
+            tooltip: {
+              mode: 'index',
+              callbacks: {
+                label: function(context) {
+                  const value = Math.round(context.raw * 10) / 10; // Redondear a 1 decimal
+                  return `${context.dataset.label}: ${value}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              title: {
+                display: true,
+                text: 'Porcentaje (%)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: useDailyData ? 'Día' : 'Semana'
+              }
+            }
+          }
+        }
+      };
+      
+      // Destruir gráfico anterior si existe
+      if (window.moodTrendsInstance) {
+        window.moodTrendsInstance.destroy();
+      }
+      
+      // Crear nuevo gráfico
+      window.moodTrendsInstance = new Chart(trendsCanvas, trendsConfig);
+      console.log('Gráfico de tendencias creado');
+    }
+  
+    // Actualizar HTML para incluir los nuevos gráficos cuando se cambia a la pestaña de tendencias
+    function updateTrendsTabContent() {
+      const tabContent = document.getElementById('tab-trends');
+      if (!tabContent) {
+        console.error('Contenido de pestaña de tendencias no encontrado');
+        return;
+      }
+      
+      // Actualizar estructura HTML para incluir nuevos gráficos
+      tabContent.innerHTML = `
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Tendencias de tus estados de ánimo</h2>
+        
+        <!-- Filtros para las visualizaciones -->
+        <div class="mb-6 bg-white rounded-lg shadow-md p-4">
+          <h3 class="text-lg font-semibold mb-3">Filtrar datos</h3>
+          <div class="flex flex-wrap gap-3">
+            <button id="filter-all" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 active:bg-blue-300 transition-all">
+              Todos los datos
+            </button>
+            <button id="filter-month" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-all">
+              Último mes
+            </button>
+            <button id="filter-week" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-all">
+              Última semana
+            </button>
+            <button id="filter-day" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-all">
+              Hoy
+            </button>
+          </div>
+        </div>
+        
+        <!-- Estadísticas de resumen -->
+        <div class="mb-6 bg-white rounded-lg shadow-md p-4">
+          <h3 class="text-lg font-semibold mb-4">Resumen de tus emociones</h3>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="p-3 border rounded-lg text-center">
+              <h4 class="font-medium text-sm text-gray-500">Total de registros</h4>
+              <p id="stats-total-count" class="text-2xl font-bold">0</p>
+            </div>
+            <div class="p-3 border rounded-lg text-center">
+              <h4 class="font-medium text-sm text-gray-500">Emoción más frecuente</h4>
+              <p id="stats-top-emotion" class="text-2xl font-bold">-</p>
+            </div>
+            <div class="p-3 border rounded-lg text-center">
+              <h4 class="font-medium text-sm text-gray-500">Cuadrante dominante</h4>
+              <p id="stats-dominant-quadrant" class="text-2xl font-bold">-</p>
+            </div>
+            <div class="p-3 border rounded-lg text-center">
+              <h4 class="font-medium text-sm text-gray-500">Consistencia diaria</h4>
+              <p id="stats-consistency" class="text-2xl font-bold">0%</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Gráfico de distribución por cuadrante -->
+          <div class="bg-white rounded-lg shadow-md p-4">
+            <canvas id="mood-chart" height="250"></canvas>
+          </div>
+          
+          <!-- Gráfico de línea temporal -->
+          <div class="bg-white rounded-lg shadow-md p-4">
+            <canvas id="timeline-chart" height="250"></canvas>
+          </div>
+          
+          <!-- Gráfico de distribución de emociones (radar) -->
+          <div class="bg-white rounded-lg shadow-md p-4">
+            <canvas id="emotion-radar" height="250"></canvas>
+          </div>
+          
+          <!-- Gráfico de tendencias -->
+          <div class="bg-white rounded-lg shadow-md p-4">
+            <canvas id="mood-trends-chart" height="250"></canvas>
+          </div>
+        </div>
+      `;
     }
   
     function formatDate(dateString) {
@@ -897,176 +1487,4 @@ document.addEventListener('DOMContentLoaded', function() {
         notification.remove();
       }, 5000);
     }
-    
-    // Función para enviar datos a Google Sheets con mejor manejo de errores
-    function sendToGoogleSheets(moodData) {
-      // URL de tu implementación de Google Apps Script
-      // IMPORTANTE: Esta URL debe ser la misma en todo el código
-      const scriptURL = 'https://script.google.com/macros/s/AKfycbxHIgXgV3-9QICix4yMWt82_0olbKSmoIKKVYXujPHDjhKZ9-aMcQAEAaGG34RCwM8l/exec';
-      
-      // Datos a enviar
-      const jsonData = {
-        timestamp: new Date().toISOString(),
-        studentId: getStudentId(),
-        studentName: localStorage.getItem('studentName') || '',
-        studentGroup: localStorage.getItem('studentGroup') || '',
-        emotion: moodData.emotion,
-        emoji: moodData.emoji,
-        quadrant: moodData.quadrant,
-        notes: moodData.notes || ''
-      };
-      
-      // Para depuración
-      console.log('Enviando datos a Google Sheets:', jsonData);
-      
-      // Crear un objeto FormData (usar primero este método más sencillo)
-      const formData = new FormData();
-      Object.entries(jsonData).forEach(([key, value]) => {
-        formData.append(key, String(value)); // Asegurarse de que los valores sean strings
-      });
-      
-      // Intentar con FormData primero
-      fetch(scriptURL, {
-        method: 'POST',
-        body: formData,
-        mode: 'no-cors' // Esto es crucial para evitar problemas de CORS
-      })
-      .then(response => {
-        console.log('Respuesta del servidor:', response);
-        
-        // Nota: con mode: 'no-cors', no podemos verificar realmente la respuesta,
-        // así que asumimos que fue exitosa si no hay errores
-        showNotification('Datos enviados correctamente a tu mentora');
-        
-        // Limpiar registros pendientes correspondientes
-        cleanupPendingMoods(moodData);
-        return { success: true };
-      })
-      .catch(error => {
-        console.error('Error con FormData:', error);
-        
-        // Si falla FormData, intentar con JSON como respaldo
-        console.log('Intentando con JSON como alternativa...');
-        
-        fetch(scriptURL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(jsonData),
-          mode: 'no-cors' // También usar no-cors aquí
-        })
-        .then(() => {
-          console.log('Éxito con JSON');
-          showNotification('Datos enviados correctamente');
-          cleanupPendingMoods(moodData);
-        })
-        .catch(jsonError => {
-          console.error('Error también con JSON:', jsonError);
-          showNotification('Error al enviar datos. Guardados localmente.', 'error');
-          
-          // Si ambos métodos fallan, guardar localmente
-          saveMoodLocally(moodData);
-        });
-      });
-    }
-    
-    // Función para limpiar registros pendientes después de una sincronización exitosa
-    function cleanupPendingMoods(moodData) {
-      const pendingMoods = JSON.parse(localStorage.getItem('moodBackup') || '[]');
-      
-      // Filtrar eliminando registros similares que puedan estar pendientes
-      const updatedPending = pendingMoods.filter(mood => {
-        // Eliminar el registro actual y coincidencias por ID o timestamp+emotion
-        return mood.id !== moodData.id && 
-               !(mood.timestamp === moodData.timestamp && mood.emotion === moodData.emotion);
-      });
-      
-      localStorage.setItem('moodBackup', JSON.stringify(updatedPending));
-      console.log(`Limpieza de respaldo: ${pendingMoods.length - updatedPending.length} registros eliminados`);
-    }
-    
-    // Función para guardar datos localmente como respaldo
-    function saveMoodLocally(moodData) {
-      // Asegurar que el registro tenga un ID único
-      if (!moodData.id) {
-        moodData.id = Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-      }
-      
-      // Obtener registros existentes
-      const localBackup = JSON.parse(localStorage.getItem('moodBackup') || '[]');
-      
-      // Verificar si el registro ya existe para evitar duplicados
-      const existingIndex = localBackup.findIndex(item => 
-        item.id === moodData.id || 
-        (item.timestamp === moodData.timestamp && item.emotion === moodData.emotion)
-      );
-      
-      if (existingIndex >= 0) {
-        // Actualizar registro existente
-        localBackup[existingIndex] = {
-          ...moodData,
-          pendingSync: true,
-          lastSyncAttempt: new Date().toISOString()
-        };
-      } else {
-        // Añadir nuevo registro
-        localBackup.push({
-          ...moodData,
-          pendingSync: true,
-          lastSyncAttempt: new Date().toISOString()
-        });
-      }
-      
-      // Guardar en localStorage
-      localStorage.setItem('moodBackup', JSON.stringify(localBackup));
-      console.log('Datos guardados localmente para sincronización futura:', moodData);
-    }
-    
-    // Función para sincronizar estados de ánimo pendientes
-    function syncPendingMoods() {
-      const pendingMoods = JSON.parse(localStorage.getItem('moodBackup') || '[]');
-      
-      // Filtrar solo los pendientes
-      const toSync = pendingMoods.filter(mood => mood.pendingSync);
-      
-      if (toSync.length === 0) {
-        console.log('No hay registros pendientes para sincronizar');
-        showNotification('No hay registros pendientes para sincronizar');
-        return;
-      }
-      
-      console.log(`Intentando sincronizar ${toSync.length} registros pendientes`);
-      showNotification(`Sincronizando ${toSync.length} registros...`);
-      
-      // Contador para seguimiento
-      let syncedCount = 0;
-      let errorCount = 0;
-      
-      // Función para sincronizar de forma secuencial
-      function syncNext(index) {
-        if (index >= toSync.length) {
-          // Terminamos todos los registros
-          localStorage.setItem('moodBackup', JSON.stringify(pendingMoods));
-          showNotification(`Sincronización completada: ${syncedCount} éxitos, ${errorCount} errores`);
-          return;
-        }
-        
-        const mood = toSync[index];
-        console.log(`Sincronizando registro ${index + 1}/${toSync.length}:`, mood.emotion);
-        
-        // Usar la función principal de envío para mantener consistencia
-        sendToGoogleSheets(mood);
-        
-        // Marcar como procesado
-        mood.pendingSync = false;
-        syncedCount++;
-        
-        // Continuar con el siguiente después de un breve retraso
-        setTimeout(() => syncNext(index + 1), 1000);
-      }
-      
-      // Iniciar sincronización secuencial
-      syncNext(0);
-    }
-});
+  });
