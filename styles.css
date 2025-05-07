@@ -1,309 +1,307 @@
 /* styles.css */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-  
-  /* Animaciones */
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  
-  @keyframes slideIn {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-  
-  .hidden {
-    display: none !important;
-  }
-  
-  /* Panel de emociones */
-  #emotions-panel {
-    animation: fadeIn 0.3s ease-out;
-  }
-  
-  #emotions-container button {
-    animation: slideIn 0.2s ease-out;
-  }
-  
-  /* Mensaje de éxito */
-  #success-message {
-    animation: slideIn 0.3s ease-out;
-  }
-  
-  /* Pulsación en botones */
-  button:active {
-    transform: scale(0.98);
-  }
-  
-  /* Estilos para el Mood Meter responsivo */
-  .mood-meter-container {
-    position: relative;
-    width: 100%;
-    max-width: 600px;
-    margin: 2rem auto;
-    aspect-ratio: 1/1;
-  }
-  
-  .mood-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    width: 100%;
-    height: 100%;
-    border-radius: 0.5rem;
-    overflow: hidden;
-  }
-  
-  .mood-quadrant {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Panel de emociones */
+#emotions-panel {
+  animation: fadeIn 0.3s ease-out;
+}
+
+#emotions-container button {
+  animation: slideIn 0.2s ease-out;
+}
+
+/* Mensaje de éxito */
+#success-message {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Pulsación en botones */
+button:active {
+  transform: scale(0.98);
+}
+
+/* Estilos para el Mood Meter responsivo */
+.mood-meter-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 2rem auto;
+  aspect-ratio: 1/1;
+  padding: 2rem; /* Añadir padding para las etiquetas */
+}
+
+.mood-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.mood-quadrant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+/* Efecto hover en los cuadrantes */
+.mood-quadrant:hover,
+#red-quadrant:hover,
+#yellow-quadrant:hover,
+#blue-quadrant:hover,
+#green-quadrant:hover {
+  opacity: 0.9;
+  transform: scale(0.98);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Etiquetas de ejes */
+.axis-label {
+  position: absolute;
+  background-color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  font-weight: 600;
+  z-index: 10;
+  text-align: center;
+}
+
+.top-label {
+  top: -1rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.bottom-label {
+  bottom: -1rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.left-label {
+  left: -2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  /* Ajustar para móviles - posición horizontal */
+  transform-origin: center;
+}
+
+.right-label {
+  right: -2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  /* Ajustar para móviles - posición horizontal */
+  transform-origin: center;
+}
+
+/* Estilos para las tabs */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tab-btn {
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  color: #4a5568;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: #3182ce;
+}
+
+.tab-btn.active {
+  color: #3182ce;
+  border-bottom-color: #3182ce;
+}
+
+.tab-content {
+  padding-top: 1rem;
+}
+
+/* Estilos para recomendaciones y objetivos */
+#recommendations-container {
+  animation: slideIn 0.4s ease-out;
+}
+
+#goal-setting {
+  animation: slideIn 0.4s ease-out;
+}
+
+#contact-mentor {
+  transition: all 0.2s;
+}
+
+#contact-mentor:hover {
+  transform: translateY(-2px);
+}
+
+/* Estilos para el historial */
+#history-list > div {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+#history-list > div:last-child {
+  border-bottom: none;
+}
+
+/* Estilos para la lista de objetivos */
+#goals-list .toggle-goal,
+#goals-list .delete-goal {
+  transition: all 0.2s;
+}
+
+#goals-list .toggle-goal:hover,
+#goals-list .delete-goal:hover {
+  transform: translateY(-1px);
+}
+
+/* Recursos de bienestar */
+.resource-card {
+  transition: all 0.3s;
+}
+
+.resource-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Notificaciones */
+#notifications-container div {
+  animation: slideIn 0.3s ease-out;
+  margin-bottom: 0.5rem;
+}
+
+/* Estilo para estadísticas en la pestaña de tendencias */
+.stats-number {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+/* Estilos responsivos */
+@media (max-width: 640px) {
+  .container {
     padding: 1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
   }
   
-  /* Efecto hover en los cuadrantes */
-  .mood-quadrant:hover,
-  #red-quadrant:hover,
-  #yellow-quadrant:hover,
-  #blue-quadrant:hover,
-  #green-quadrant:hover {
-    opacity: 0.9;
-    transform: scale(0.98);
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  h1 {
+    font-size: 1.5rem;
   }
   
-  /* Etiquetas de ejes */
   .axis-label {
-    position: absolute;
-    background-color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 9999px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    font-weight: 600;
-    z-index: 10;
-    text-align: center;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
   }
   
-  .top-label {
-    top: -1rem;
-    left: 50%;
-    transform: translateX(-50%);
+  .mood-meter-container {
+    margin-top: 2.5rem;
+    margin-bottom: 2.5rem;
+    padding: 1.5rem;
   }
   
-  .bottom-label {
-    bottom: -1rem;
-    left: 50%;
-    transform: translateX(-50%);
+  .tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 0.5rem;
+  }
+  
+  /* Nuevos estilos para etiquetas laterales en móviles */
+  .left-label, .right-label {
+    writing-mode: horizontal-tb;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    background-color: rgba(255, 255, 255, 0.9);
   }
   
   .left-label {
-    writing-mode: vertical-rl;
-    left: -1.5rem;
-    top: 50%;
-    transform: translateY(-50%) rotate(180deg);
+    left: 1rem;
+    top: -1rem;
+    transform: none;
   }
   
   .right-label {
-    writing-mode: vertical-rl;
-    right: -1.5rem;
-    top: 50%;
-    transform: translateY(-50%);
+    right: 1rem;
+    top: -1rem;
+    transform: none;
   }
   
-  /* Estilos para las tabs */
-  .tabs {
-    display: flex;
-    border-bottom: 1px solid #e2e8f0;
+  /* Ajustar posición de etiquetas horizontales */
+  .top-label {
+    top: 0.5rem;
+    z-index: 20;
   }
   
-  .tab-btn {
-    padding: 0.75rem 1rem;
-    font-weight: 500;
-    color: #4a5568;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
+  .bottom-label {
+    bottom: 0.5rem;
+    z-index: 20;
   }
-  
-  .tab-btn:hover {
-    color: #3182ce;
-  }
-  
-  .tab-btn.active {
-    color: #3182ce;
-    border-bottom-color: #3182ce;
-  }
-  
-  .tab-content {
-    padding-top: 1rem;
-  }
-  
-  /* Estilos para recomendaciones y objetivos */
-  #recommendations-container {
-    animation: slideIn 0.4s ease-out;
-  }
-  
-  #goal-setting {
-    animation: slideIn 0.4s ease-out;
-  }
-  
-  #contact-mentor {
-    transition: all 0.2s;
-  }
-  
-  #contact-mentor:hover {
-    transform: translateY(-2px);
-  }
-  
-  /* Estilos para el historial */
-  #history-list > div {
-    border-bottom: 1px solid #e2e8f0;
-  }
-  
-  #history-list > div:last-child {
-    border-bottom: none;
-  }
-  
-  /* Estilos para la lista de objetivos */
-  #goals-list .toggle-goal,
-  #goals-list .delete-goal {
-    transition: all 0.2s;
-  }
-  
-  #goals-list .toggle-goal:hover,
-  #goals-list .delete-goal:hover {
-    transform: translateY(-1px);
-  }
-  
-  /* Recursos de bienestar */
-  .resource-card {
-    transition: all 0.3s;
-  }
-  
-  .resource-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Notificaciones */
-  #notifications-container div {
-    animation: slideIn 0.3s ease-out;
-    margin-bottom: 0.5rem;
-  }
-  
-  /* Estilo para estadísticas en la pestaña de tendencias */
-  .stats-number {
-    font-size: 1.5rem;
-    font-weight: bold;
-  }
-  
-  /* Estilos responsivos */
-  @media (max-width: 640px) {
-    .container {
-      padding: 1rem;
-    }
-    
-    h1 {
-      font-size: 1.5rem;
-    }
-    
-    .axis-label {
-      font-size: 0.75rem;
-      padding: 0.25rem 0.5rem;
-    }
-    
-    .left-label, .right-label {
-      width: 1.5rem;
-    }
-    
-    .mood-meter-container {
-      margin-top: 2.5rem;
-      margin-bottom: 2.5rem;
-    }
-    
-    .tabs {
-      overflow-x: auto;
-      white-space: nowrap;
-      padding-bottom: 0.5rem;
-    }
-  }
-  
-  /* Para pantallas muy pequeñas: etiquetas rotadas */
-  @media (max-width: 480px) {
-    .axis-label {
-      white-space: nowrap;
-    }
-    
-    .left-label {
-      left: 0;
-      top: 0;
-      transform: rotate(-45deg) translate(-30%, -50%);
-      transform-origin: top left;
-      writing-mode: horizontal-tb;
-    }
-    
-    .right-label {
-      right: 0;
-      top: 0;
-      transform: rotate(45deg) translate(30%, -50%);
-      transform-origin: top right;
-      writing-mode: horizontal-tb;
-    }
-    
-    /* Ajustes para los gráficos en dispositivos pequeños */
-    .grid-cols-1 {
-      grid-template-columns: 1fr;
-    }
-    
-    canvas {
-      max-height: 300px;
-    }
-  }
-  /* Ajustes para mejorar la visualización en dispositivos móviles */
+}
+
+/* Para pantallas muy pequeñas */
 @media (max-width: 480px) {
-    .mood-meter-container {
-      margin-top: 3rem;
-      margin-bottom: 3rem;
-    }
-    
-    .axis-label {
-      padding: 0.3rem 0.6rem;
-      font-size: 0.75rem;
-      white-space: nowrap;
-    }
-    
-    /* Mejor posicionamiento para etiquetas laterales */
-    .left-label {
-      left: 0;
-      top: 0;
-      transform: rotate(-45deg) translate(-30%, -50%);
-      transform-origin: top left;
-      writing-mode: horizontal-tb;
-    }
-    
-    .right-label {
-      right: 0;
-      top: 0;
-      transform: rotate(45deg) translate(30%, -50%);
-      transform-origin: top right;
-      writing-mode: horizontal-tb;
-    }
+  .mood-meter-container {
+    padding: 0.5rem;
+    margin-top: 3rem;
   }
   
-  /* Para pantallas muy pequeñas */
-  @media (max-width: 360px) {
-    .top-label, .bottom-label {
-      font-size: 0.7rem;
-      padding: 0.25rem 0.5rem;
-    }
-    
-    .left-label, .right-label {
-      font-size: 0.7rem;
-      padding: 0.25rem 0.5rem;
-    }
+  /* Cambiar completamente el diseño de las etiquetas */
+  .axis-label {
+    white-space: nowrap;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
   }
+  
+  /* Convertir las etiquetas laterales a posición superior */
+  .left-label {
+    position: absolute;
+    left: 0;
+    top: -2rem;
+    transform: none;
+    writing-mode: horizontal-tb;
+    border-radius: 0.25rem;
+  }
+  
+  .right-label {
+    position: absolute;
+    right: 0;
+    top: -2rem;
+    transform: none;
+    writing-mode: horizontal-tb;
+    border-radius: 0.25rem;
+  }
+  
+  /* Ajustar posición de etiquetas horizontales */
+  .top-label, .bottom-label {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+}
